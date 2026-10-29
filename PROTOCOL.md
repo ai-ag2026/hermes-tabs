@@ -67,7 +67,7 @@ Every handler that touches a tab goes through `assertAllowed(tabId)`, directly o
   - `blockedSites`: list of domains, subdomains included.
 - Stored in `chrome.storage.local`; session values in `chrome.storage.session`. The reply is the complete current state.
 - Blocked sites are checked by `assertSafeTab` before every debugger command (URL and `pendingUrl`), and by `tabs_create` and `navigate` before opening.
-- Tabs opened by an agent tab (`openerTabId`, for example links with `target=_blank`) belong to the agent and join the group. The click result reports their ID.
+- Tabs opened by an agent tab (for example links with `target=_blank`) belong to the agent and join the group. The click result reports their ID. Detection uses `openerTabId` and, because Chromium names the window's active tab as opener when the click happens in a background tab, also the agent page's `Page.windowOpen` event, matched by URL within 3 s.
 
 ## Protected pages
 
@@ -102,7 +102,7 @@ Through the extension's own options page the agent would otherwise reach the ext
 - Screenshots are taken with `clip.scale = zoom * scale / devicePixelRatio`. At `scale` 1, one image pixel equals one CSS pixel of the viewport.
 - `Input.dispatchMouseEvent` expects CSS pixels. Coordinates taken from a screenshot therefore match directly, also with display scaling or browser zoom.
 - At `scale` < 1, the reply states the viewport frame in which the coordinates apply.
-- Screenshots need a painted tab: the extension raises the tab within its window first, because background tabs are not rendered. If nothing is painted within 6 s, the call fails with "no image".
+- Screenshots need a painted tab. Background tabs are not rendered, and neither `Page.captureScreenshot` variants nor `Page.startScreencast` change that. The extension therefore raises the tab within its window for the capture and then re-activates the tab that was active before, unless the user switched tabs meanwhile. If nothing is painted within 6 s, the call fails with "no image".
 
 ## HTTP side (agent → relay)
 

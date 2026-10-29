@@ -8,6 +8,8 @@ hermes-tabs is a Chromium extension (Manifest V3, built on `chrome.debugger`), a
 
 It is for people who want an agent to use sites that have no API or sit behind a login, without handing the agent a separate browser profile or their credentials, and who want to see and stop what it does.
 
+**Familiar tool set.** The tools are modelled on the browser tools of Anthropic's *Claude in Chrome* extension: largely the same names (without the `_mcp` suffix), the same parameters and the same `ref_N` workflow, so prompts and habits carry over. hermes-tabs is an independent implementation built from the published tool descriptions and black-box testing. It contains no code from Claude in Chrome and is not affiliated with or endorsed by Anthropic.
+
 Status: early. Tested interactively on ~36 popular websites and by an automated end-to-end test (see [Tests](#tests)).
 
 ## Architecture
@@ -219,7 +221,7 @@ Self-test of the hook: `python3 hermes-plugin/__init__.py`.
 
 - **The write protection is a guard rail, not a sandbox.** It blocks non-GET requests made by `javascript` on unapproved sites. It does not cover WebSocket messages, service workers, or GET requests that have side effects. Treat `javascript` on sites you have not approved as read-only by convention, not by guarantee.
 - **The agent works with your logins.** In a shared tab it can do whatever you can do on that site, once you approve the website. Only share what you are comfortable with.
-- **Screenshots bring the tab to the front.** Browsers do not paint background tabs, so for a screenshot the tab is raised within its window. The window must be visible: a covered or minimised window renders nothing, and after 6 s you get "no image" while the text tools keep working.
+- **Screenshots briefly bring the tab to the front.** Browsers do not paint background tabs, so for a screenshot the tab is raised within its window for a moment; afterwards your previous tab is active again. The window must be visible: a covered or minimised window renders nothing, and after 6 s you get "no image" while the text tools keep working.
 - **No CAPTCHAs and no logins by the agent.** It does not solve CAPTCHAs, and it does not enter passwords. Sites that require either need you to do that step. Some sites also refuse input when the tab is being controlled.
 - Content of cross-origin iframes is not returned by `read_page`; use screenshots and coordinates.
 - A dialog that opened while loading, before the extension could attach, can only be confirmed by you in the browser. For the agent's own tabs, `tabs_close` helps.

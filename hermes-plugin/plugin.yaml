@@ -1,7 +1,13 @@
 name: hermes-tabs
-version: "0.1.0"
+version: "0.1.1"
 description: "Hermes in the browser - permission settings: master switch, default for all websites (ask / allow all), time window, allowed and blocked sites. The values live in the browser extension and apply there; this plugin shows them under Settings -> Plugins and also enforces blocked sites for Hermes' own browser tools."
 author: "ai-ag2026"
 license: MIT
+requires_hermes: ">=0.22.5"
+requires_env:
+  - name: HERMES_TABS_ADMIN_TOKEN
+    description: "Admin token of the hermes-tabs relay (HERMES_TABS_ADMIN_TOKEN in the relay's env file)"
+    url: "https://github.com/ai-ag2026/hermes-tabs#hermes-plugin"
+    password: true
 provides_hooks:
   - pre_tool_call

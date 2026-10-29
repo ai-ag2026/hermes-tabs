@@ -195,7 +195,7 @@ async def page_eval(url_part, expression):
 async def permissions(t: T, base: str):
     """Visible, stoppable, actions only with per-site permission, no passwords, scripts read-only."""
     await sw_eval("chrome.storage.local.set({siteMode: 'ask', permTimeoutMs: 4000, allowedSites: {}}).then(() => 1)")
-    tid = json.loads(await t("tabs_create", url=f"{base}/two.html"))["tabId"]
+    tid = json.loads(await t("tabs_create", url=f"{base}/two.html?p1"))["tabId"]
     js = lambda code: t("javascript", tabId=tid, text=code)
     await js("document.body.insertAdjacentHTML('beforeend', '<input type=password id=pw><button id=b onclick=\"window.n=(window.n||0)+1\">B</button>'); 1")
 
@@ -222,14 +222,14 @@ async def permissions(t: T, base: str):
     # User clicks "No"
     task = asyncio.create_task(t.raw("computer", tabId=tid, action="left_click", coordinate=[5, 5]))
     await asyncio.sleep(1)
-    await user_click("two.html", ".deny")
+    await user_click("two.html?p1", ".deny")
     r = await task
     assert r.is_error and "declined" in r.content[0].text, r.content[0].text
     # User clicks "Once": click runs, follow-up action without a new prompt
     pos = json.loads(await js(center_js("#b")))
     task = asyncio.create_task(t.raw("computer", tabId=tid, action="left_click", coordinate=pos))
     await asyncio.sleep(1)
-    await user_click("two.html", ".once")
+    await user_click("two.html?p1", ".once")
     r = await task
     assert not r.is_error, r.content[0].text
     await t("computer", tabId=tid, action="left_click", coordinate=pos)
@@ -237,9 +237,9 @@ async def permissions(t: T, base: str):
     if os.environ.get("SMOKE_SHOTS"):  # for viewing: frame, pointer, label, stop bar
         await t("computer", tabId=tid, action="left_click", coordinate=pos, action_summary="Click on B")
         await asyncio.sleep(0.4)
-        await user_click("two.html", shot=Path(os.environ["SMOKE_SHOTS"]) / "overlay.png")
+        await user_click("two.html?p1", shot=Path(os.environ["SMOKE_SHOTS"]) / "overlay.png")
         await asyncio.sleep(7)  # after 6 s idle everything must be gone
-        await user_click("two.html", shot=Path(os.environ["SMOKE_SHOTS"]) / "overlay-idle.png")
+        await user_click("two.html?p1", shot=Path(os.environ["SMOKE_SHOTS"]) / "overlay-idle.png")
     # Overlay is visible, but not in the screenshot
     assert await js("!!document.querySelector('hermes-tabs-overlay')") == "true"
     await t("computer", tabId=tid, action="screenshot")
@@ -269,7 +269,7 @@ async def permissions(t: T, base: str):
     assert r.is_error and "cross-origin iframe" in r.content[0].text, r.content[0].text
 
     # Stop in the tab: share revoked, Hermes has no more access
-    await user_click("two.html", ".stop")
+    await user_click("two.html?p1", ".stop")
     await asyncio.sleep(0.5)
     assert tid not in {x["tabId"] for x in json.loads(await t("tabs_context"))}
     r = await t.raw("read_page", tabId=tid)
@@ -277,10 +277,10 @@ async def permissions(t: T, base: str):
     await sw_eval(f"chrome.tabs.remove({tid}).then(() => 1)")
 
     # "Always": stored, no further prompt, visible and revocable in the options
-    tid = json.loads(await t("tabs_create", url=f"{base}/two.html"))["tabId"]
+    tid = json.loads(await t("tabs_create", url=f"{base}/two.html?p2"))["tabId"]
     task = asyncio.create_task(t.raw("computer", tabId=tid, action="left_click", coordinate=[5, 5]))
     await asyncio.sleep(1)
-    await user_click("two.html", ".always")
+    await user_click("two.html?p2", ".always")
     assert not (await task).is_error
     await t("computer", tabId=tid, action="left_click", coordinate=[5, 5])
     await sw_eval(f"chrome.tabs.create({{url: chrome.runtime.getURL('options.html')}}).then(() => 1)")
@@ -292,7 +292,7 @@ async def permissions(t: T, base: str):
     # "Site: until restart" lands in storage.session
     task = asyncio.create_task(t.raw("computer", tabId=tid, action="left_click", coordinate=[5, 5]))
     await asyncio.sleep(1)
-    await user_click("two.html", ".session")
+    await user_click("two.html?p2", ".session")
     assert not (await task).is_error
     assert await sw_eval("chrome.storage.session.get('sessionSites').then((x) => Object.keys(x.sessionSites))") == [base]
     await sw_eval("chrome.storage.session.set({sessionSites: {}}).then(() => 1)")
@@ -431,6 +431,8 @@ async def scenario(t: T, tmp: Path):
     # Screenshot coordinates match clicks (also at scale factor 2)
     await js("scrollTo(0, 0)")
     shot = await t.raw("computer", tabId=tid, action="screenshot")
+    # Raised only for the capture: the previously active tab is active again
+    assert not next(x for x in json.loads(await t("tabs_context")) if x["tabId"] == tid)["active"], "screenshot left the tab in front"
     note = shot.content[0].text
     m = re.search(r"(\d+)x(\d+) px.*\((\d+)x(\d+)\)", note)
     assert m and m.group(1) == m.group(3), f"screenshot not in CSS pixels: {note}"

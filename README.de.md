@@ -8,6 +8,8 @@ hermes-tabs besteht aus einer Chromium-Erweiterung (Manifest V3, auf Basis von `
 
 Gedacht ist es für alle, die einen Agenten Websites nutzen lassen wollen, die keine API haben oder hinter einem Login liegen, ohne ihm ein getrenntes Browserprofil oder Zugangsdaten zu geben, und die sehen und stoppen wollen, was er tut.
 
+**Vertrauter Werkzeugsatz.** Die Werkzeuge sind den Browser-Werkzeugen von Anthropics Erweiterung *Claude in Chrome* nachgebildet: weitgehend dieselben Namen (ohne die Endung `_mcp`), dieselben Parameter und derselbe Ablauf mit `ref_N`, sodass Prompts und Gewohnheiten übertragbar sind. hermes-tabs ist eine eigenständige Umsetzung auf Grundlage der veröffentlichten Werkzeugbeschreibungen und von Blackbox-Tests. Es enthält keinen Code aus Claude in Chrome und steht in keiner Verbindung zu Anthropic, das es auch nicht unterstützt oder empfiehlt.
+
 Stand: früh. Interaktiv an ~36 gängigen Websites getestet, dazu ein automatischer Ende-zu-Ende-Test (siehe [Tests](#tests)).
 
 ## Architektur
@@ -219,7 +221,7 @@ Selbsttest des Hooks: `python3 hermes-plugin/__init__.py`.
 
 - **Der Schreibschutz ist eine Leitplanke, keine Sandbox.** Er blockiert Nicht-GET-Anfragen, die `javascript` auf nicht freigegebenen Seiten auslöst. WebSocket-Nachrichten, Service Worker und GET-Anfragen mit Nebenwirkungen erfasst er nicht. `javascript` auf nicht freigegebenen Seiten ist damit nur per Konvention lesend, nicht per Garantie.
 - **Der Agent arbeitet mit deinen Logins.** In einem freigegebenen Tab kann er auf dieser Seite alles, was du auch kannst, sobald du die Website freigibst. Gib nur frei, was du ihm zutraust.
-- **Screenshots holen den Tab nach vorn.** Browser zeichnen Hintergrund-Tabs nicht, deshalb wird der Tab für einen Screenshot in seinem Fenster nach vorn geholt. Das Fenster muss sichtbar sein: Ein verdecktes oder minimiertes Fenster rendert nichts, nach 6 s kommt „Kein Bild“, die Text-Werkzeuge arbeiten weiter.
+- **Screenshots holen den Tab kurz nach vorn.** Browser zeichnen Hintergrund-Tabs nicht, deshalb wird der Tab für einen Screenshot einen Moment lang in seinem Fenster nach vorn geholt; danach ist dein vorheriger Tab wieder aktiv. Das Fenster muss sichtbar sein: Ein verdecktes oder minimiertes Fenster rendert nichts, nach 6 s kommt „Kein Bild“, die Text-Werkzeuge arbeiten weiter.
 - **Keine CAPTCHAs und keine Logins durch den Agenten.** Er löst keine CAPTCHAs und gibt keine Passwörter ein. Wo das nötig ist, musst du den Schritt selbst machen. Manche Seiten verweigern außerdem Eingaben, wenn der Tab gesteuert wird.
 - Inhalte in iframes fremder Herkunft liefert `read_page` nicht; dann mit Screenshot und Koordinaten arbeiten.
 - Einen Dialog, der beim Laden aufging, bevor die Extension zugreifen konnte, kann nur du im Browser bestätigen. Bei eigenen Tabs hilft `tabs_close`.

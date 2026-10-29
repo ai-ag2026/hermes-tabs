@@ -107,11 +107,26 @@ chrome.action.onClicked.addListener(async (tab) => {
 // If a Hermes tab opens a new tab (link with target=_blank, window.open), Hermes owns it too –
 // otherwise Hermes would lose the thread (e.g. shop listings). Not from tabs the user shared: the user clicks there too.
 const childTabs = new Map(); // parent tab -> [{ id, t }]
+// From a background tab, Chromium names the window's *active* tab as opener – so also match
+// the page's own Page.windowOpen report by URL.
+const windowOpens = []; // { parent, url, t }
+async function openedByAgent(tab) {
+  if ((await getShared())[tab.openerTabId] === "agent") return tab.openerTabId;
+  for (let i = 0; i < 10; i++) { // URL and report may arrive just after the tab
+    const t = await chrome.tabs.get(tab.id).catch(() => null);
+    if (!t) return null;
+    const k = windowOpens.findIndex((o) => Date.now() - o.t < 3000 && (o.url === t.pendingUrl || o.url === t.url));
+    if (k >= 0) return windowOpens.splice(k, 1)[0].parent;
+    await sleep(0.1);
+  }
+  return null;
+}
 chrome.tabs.onCreated.addListener(async (tab) => {
-  if (!tab.openerTabId || (await getShared())[tab.openerTabId] !== "agent") return;
+  const parent = await openedByAgent(tab);
+  if (parent == null) return;
   await setShared(tab.id, "agent");
   await withTimeout(addToGroup(tab.id), 3000, "Grouping").catch(() => {});
-  childTabs.set(tab.openerTabId, [...(childTabs.get(tab.openerTabId) ?? []), { id: tab.id, t: Date.now() }].slice(-5));
+  childTabs.set(parent, [...(childTabs.get(parent) ?? []), { id: tab.id, t: Date.now() }].slice(-5));
 });
 const newChildren = (tabId, since) => (childTabs.get(tabId) ?? []).filter((c) => c.t >= since).map((c) => c.id);
 
@@ -222,6 +237,9 @@ chrome.debugger.onEvent.addListener(({ tabId }, method, p) => {
       break;
     case "Page.javascriptDialogClosed":
       st.dialog = null;
+      break;
+    case "Page.windowOpen":
+      getShared().then((s) => s[tabId] === "agent" && windowOpens.splice(0, windowOpens.length - 9, { parent: tabId, url: p.url, t: Date.now() }));
       break;
   }
 });
@@ -429,14 +447,19 @@ async function pressKey(tabId, combo) {
 async function capture(tabId, { region, scale = 1 } = {}) {
   await assertAllowed(tabId);
   const tab = await chrome.tabs.get(tabId);
+  let back = null;
   if (!tab.active) {
-    await chrome.tabs.update(tabId, { active: true }); // background tabs are not rendered
+    // Background tabs are not rendered, and no CDP call makes them paint: raise briefly, then give the user's tab back.
+    [back] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
+    await chrome.tabs.update(tabId, { active: true });
     await new Promise((r) => setTimeout(r, 150));
   }
   await show(tabId, { hidden: true }); // Hermes should see the real page, not frame and pointer
   try {
     return await captureInner(tabId, { region, scale });
   } finally {
+    // First give the user's tab back (only if they did not switch meanwhile): the overlay call can hang on a stuck page.
+    if (back && (await chrome.tabs.get(tabId).catch(() => ({}))).active) await chrome.tabs.update(back.id, { active: true }).catch(() => {});
     await show(tabId, { hidden: false });
   }
 }

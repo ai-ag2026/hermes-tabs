@@ -29,6 +29,12 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+try:
+    from agent.secret_scope import get_secret_str  # honours the active Hermes profile
+except ImportError:  # outside Hermes (self-test)
+    def get_secret_str(name: str, default: str = "") -> str:
+        return os.environ.get(name, default)
+
 logger = logging.getLogger(__name__)
 
 RELAY = os.environ.get("HERMES_TABS_RELAY", "http://127.0.0.1:8766").rstrip("/")
@@ -43,7 +49,7 @@ _cache: Dict[str, Any] = {"at": 0.0, "settings": None}
 
 def relay(method: str = "GET", body: Optional[dict] = None, timeout: float = 5) -> dict:
     """Read/write the settings via the relay (admin token from the environment)."""
-    token = os.environ.get("HERMES_TABS_ADMIN_TOKEN", "")
+    token = get_secret_str("HERMES_TABS_ADMIN_TOKEN")
     if not token:
         raise RuntimeError("HERMES_TABS_ADMIN_TOKEN is missing (e.g. in ~/.hermes/.env)")
     req = urllib.request.Request(f"{RELAY}/admin/settings", method=method,
