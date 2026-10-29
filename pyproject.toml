@@ -1,0 +1,12 @@
+[project]
+name = "hermes-tabs"
+version = "0.1.0"
+description = "Relay that lets an AI agent drive tabs in your real browser through an MV3 extension (MCP over HTTP)"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=2.3.0",
+    "pillow>=13.0.0",
+    "uvicorn>=0.54.0",
+    "websockets>=17.3",
+]

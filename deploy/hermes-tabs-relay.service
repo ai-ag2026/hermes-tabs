@@ -1,0 +1,23 @@
+# systemd user unit. Install:
+#   mkdir -p ~/.config/systemd/user && cp deploy/hermes-tabs-relay.service ~/.config/systemd/user/
+#   (adjust WorkingDirectory/ExecStart if the checkout is not in ~/hermes-tabs)
+#   systemctl --user daemon-reload && systemctl --user enable --now hermes-tabs-relay
+# To keep it running without a login session: loginctl enable-linger $USER
+[Unit]
+Description=Hermes Tabs Relay (browser extension <-> agent MCP)
+After=network-online.target
+
+[Service]
+# %h = home directory of the user running the unit
+WorkingDirectory=%h/hermes-tabs
+# ~/.config/hermes-tabs/env (chmod 600), one KEY=value per line, no quotes needed:
+#   HERMES_TABS_TOKEN=<long random string>
+#   HERMES_TABS_ADMIN_TOKEN=<another long random string>   # optional, enables /admin/settings
+#   HERMES_TABS_HOST=127.0.0.1                             # optional, default 127.0.0.1
+#   HERMES_TABS_PORT=8766                                  # optional, default 8766
+EnvironmentFile=%h/.config/hermes-tabs/env
+ExecStart=%h/hermes-tabs/.venv/bin/python relay.py
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

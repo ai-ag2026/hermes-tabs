@@ -1,0 +1,194 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "Gibt Hermes einzelne Tabs frei; die Verbindung läuft über das eigene Relay."
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: diesen Tab freigeben / entziehen"
+  },
+  "badgeOff": {
+    "message": "aus"
+  },
+  "overlayBar": {
+    "message": "Hermes steuert diesen Tab"
+  },
+  "overlayStop": {
+    "message": "Stopp"
+  },
+  "askDeny": {
+    "message": "Nein"
+  },
+  "askOnce": {
+    "message": "Einmal"
+  },
+  "askSession": {
+    "message": "Website: bis Neustart"
+  },
+  "askAlways": {
+    "message": "Website: immer"
+  },
+  "askAll1h": {
+    "message": "Alle Websites: 1 Std."
+  },
+  "askText": {
+    "message": "Hermes möchte auf $HOST$ handeln",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes bittet um Freigabe"
+  },
+  "notifSession": {
+    "message": "Diese Website bis Neustart"
+  },
+  "notifAll1h": {
+    "message": "Alle Websites 1 Stunde"
+  },
+  "label_read_page": {
+    "message": "liest die Seite"
+  },
+  "label_get_page_text": {
+    "message": "liest den Text"
+  },
+  "label_find": {
+    "message": "sucht auf der Seite"
+  },
+  "label_javascript": {
+    "message": "liest per Skript"
+  },
+  "label_form_input": {
+    "message": "füllt ein Feld aus"
+  },
+  "label_file_upload": {
+    "message": "lädt eine Datei hoch"
+  },
+  "label_navigate": {
+    "message": "öffnet eine Seite"
+  },
+  "label_read_console_messages": {
+    "message": "liest die Konsole"
+  },
+  "label_read_network_requests": {
+    "message": "liest Netzwerkanfragen"
+  },
+  "label_handle_dialog": {
+    "message": "beantwortet einen Dialog"
+  },
+  "action_left_click": {
+    "message": "Klick"
+  },
+  "action_right_click": {
+    "message": "Rechtsklick"
+  },
+  "action_double_click": {
+    "message": "Doppelklick"
+  },
+  "action_triple_click": {
+    "message": "Dreifachklick"
+  },
+  "action_hover": {
+    "message": "zeigt auf"
+  },
+  "action_left_click_drag": {
+    "message": "zieht"
+  },
+  "action_type": {
+    "message": "tippt"
+  },
+  "action_key": {
+    "message": "drückt Tasten"
+  },
+  "action_scroll": {
+    "message": "scrollt"
+  },
+  "action_scroll_to": {
+    "message": "scrollt zu"
+  },
+  "optSave": {
+    "message": "Speichern und verbinden"
+  },
+  "optSaved": {
+    "message": "Gespeichert. Ist das Badge am Symbol leer, steht die Verbindung."
+  },
+  "optBrowserHeading": {
+    "message": "Hermes im Browser"
+  },
+  "optEnabled": {
+    "message": "Aktiviert (aus: Hermes kann gar nichts im Browser tun)"
+  },
+  "optActionsHeading": {
+    "message": "Aktionen auf Websites"
+  },
+  "optActionsHelp": {
+    "message": "Lesen darf Hermes überall in seinen Tabs. Klicken, Tippen und Formulare nur mit Freigabe."
+  },
+  "optModeAsk": {
+    "message": "Fragen, außer bei freigegebenen Websites"
+  },
+  "optModeAll": {
+    "message": "Alle Websites immer erlauben"
+  },
+  "optTempHeading": {
+    "message": "Alle Websites vorübergehend erlauben"
+  },
+  "opt1h": {
+    "message": "1 Stunde"
+  },
+  "opt8h": {
+    "message": "8 Stunden"
+  },
+  "optUntilRestart": {
+    "message": "Bis Browser-Neustart"
+  },
+  "optEnd": {
+    "message": "Beenden"
+  },
+  "optAlwaysHeading": {
+    "message": "Immer erlaubt"
+  },
+  "optSessionHeading": {
+    "message": "Bis Browser-Neustart erlaubt"
+  },
+  "optBlockedHeading": {
+    "message": "Blockierte Seiten"
+  },
+  "optBlockedHelp": {
+    "message": "Hier darf Hermes gar nichts, auch nicht lesen (Subdomains eingeschlossen)."
+  },
+  "optAdd": {
+    "message": "Hinzufügen"
+  },
+  "optRevoke": {
+    "message": "Widerrufen"
+  },
+  "optRemove": {
+    "message": "Entfernen"
+  },
+  "optNone": {
+    "message": "keine"
+  },
+  "optActiveSession": {
+    "message": "Aktiv bis zum Browser-Neustart."
+  },
+  "optActiveUntil": {
+    "message": "Aktiv bis $TIME$ Uhr.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "Aus."
+  },
+  "optBadDomain": {
+    "message": "Bitte eine Domain wie example.com eingeben"
+  }
+}

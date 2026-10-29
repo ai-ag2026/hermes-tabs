@@ -1,0 +1,194 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "Shares individual tabs with the Hermes agent; the connection runs through your own relay."
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: share / revoke this tab"
+  },
+  "badgeOff": {
+    "message": "off"
+  },
+  "overlayBar": {
+    "message": "Hermes is controlling this tab"
+  },
+  "overlayStop": {
+    "message": "Stop"
+  },
+  "askDeny": {
+    "message": "No"
+  },
+  "askOnce": {
+    "message": "Once"
+  },
+  "askSession": {
+    "message": "Site: until restart"
+  },
+  "askAlways": {
+    "message": "Site: always"
+  },
+  "askAll1h": {
+    "message": "All sites: 1 hr"
+  },
+  "askText": {
+    "message": "Hermes wants to act on $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes requests permission"
+  },
+  "notifSession": {
+    "message": "This site until restart"
+  },
+  "notifAll1h": {
+    "message": "All sites for 1 hour"
+  },
+  "label_read_page": {
+    "message": "reading the page"
+  },
+  "label_get_page_text": {
+    "message": "reading the text"
+  },
+  "label_find": {
+    "message": "searching the page"
+  },
+  "label_javascript": {
+    "message": "reading via script"
+  },
+  "label_form_input": {
+    "message": "filling in a field"
+  },
+  "label_file_upload": {
+    "message": "uploading a file"
+  },
+  "label_navigate": {
+    "message": "opening a page"
+  },
+  "label_read_console_messages": {
+    "message": "reading the console"
+  },
+  "label_read_network_requests": {
+    "message": "reading network requests"
+  },
+  "label_handle_dialog": {
+    "message": "answering a dialog"
+  },
+  "action_left_click": {
+    "message": "Click"
+  },
+  "action_right_click": {
+    "message": "Right-click"
+  },
+  "action_double_click": {
+    "message": "Double-click"
+  },
+  "action_triple_click": {
+    "message": "Triple-click"
+  },
+  "action_hover": {
+    "message": "Pointing at"
+  },
+  "action_left_click_drag": {
+    "message": "Dragging"
+  },
+  "action_type": {
+    "message": "Typing"
+  },
+  "action_key": {
+    "message": "Pressing keys"
+  },
+  "action_scroll": {
+    "message": "Scrolling"
+  },
+  "action_scroll_to": {
+    "message": "Scrolling to"
+  },
+  "optSave": {
+    "message": "Save and connect"
+  },
+  "optSaved": {
+    "message": "Saved. If the badge on the icon is empty, the connection is up."
+  },
+  "optBrowserHeading": {
+    "message": "Hermes in the browser"
+  },
+  "optEnabled": {
+    "message": "Enabled (off: Hermes cannot do anything in the browser)"
+  },
+  "optActionsHeading": {
+    "message": "Actions on websites"
+  },
+  "optActionsHelp": {
+    "message": "Hermes may read anywhere in its tabs. Clicking, typing and forms only with permission."
+  },
+  "optModeAsk": {
+    "message": "Ask, except on allowed websites"
+  },
+  "optModeAll": {
+    "message": "Always allow all websites"
+  },
+  "optTempHeading": {
+    "message": "Temporarily allow all websites"
+  },
+  "opt1h": {
+    "message": "1 hour"
+  },
+  "opt8h": {
+    "message": "8 hours"
+  },
+  "optUntilRestart": {
+    "message": "Until browser restart"
+  },
+  "optEnd": {
+    "message": "End"
+  },
+  "optAlwaysHeading": {
+    "message": "Always allowed"
+  },
+  "optSessionHeading": {
+    "message": "Allowed until browser restart"
+  },
+  "optBlockedHeading": {
+    "message": "Blocked sites"
+  },
+  "optBlockedHelp": {
+    "message": "Hermes may do nothing here, not even read (subdomains included)."
+  },
+  "optAdd": {
+    "message": "Add"
+  },
+  "optRevoke": {
+    "message": "Revoke"
+  },
+  "optRemove": {
+    "message": "Remove"
+  },
+  "optNone": {
+    "message": "none"
+  },
+  "optActiveSession": {
+    "message": "Active until browser restart."
+  },
+  "optActiveUntil": {
+    "message": "Active until $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "Off."
+  },
+  "optBadDomain": {
+    "message": "Please enter a domain such as example.com"
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hermes Tabs</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 2em; max-width: 36em; }
+  label { display: block; margin: 1em 0 .3em; }
+  input { width: 100%; padding: .4em; box-sizing: border-box; }
+  button { margin-top: 1em; padding: .4em 1.2em; }
+</style>
+<h1>Hermes Tabs</h1>
+<label for="relay">Relay (WebSocket)</label>
+<input id="relay" placeholder="ws://127.0.0.1:8766/ext">
+<label for="token">Token</label>
+<input id="token" type="password">
+<button id="save" data-i18n="optSave"></button>
+<p id="status"></p>
+<h2 data-i18n="optBrowserHeading"></h2>
+<label><input type="checkbox" id="enabled" style="width:auto"> <span data-i18n="optEnabled"></span></label>
+<h2 data-i18n="optActionsHeading"></h2>
+<p data-i18n="optActionsHelp"></p>
+<label><input type="radio" name="mode" value="ask" style="width:auto"> <span data-i18n="optModeAsk"></span></label>
+<label><input type="radio" name="mode" value="all" style="width:auto"> <span data-i18n="optModeAll"></span></label>
+<h3 data-i18n="optTempHeading"></h3>
+<p id="temp"></p>
+<button data-t="all1h" data-i18n="opt1h"></button> <button data-t="all8h" data-i18n="opt8h"></button> <button data-t="allSession" data-i18n="optUntilRestart"></button> <button data-t="off" data-i18n="optEnd"></button>
+<h3 data-i18n="optAlwaysHeading"></h3>
+<ul id="sites"></ul>
+<h3 data-i18n="optSessionHeading"></h3>
+<ul id="sessionSites"></ul>
+<h3 data-i18n="optBlockedHeading"></h3>
+<p data-i18n="optBlockedHelp"></p>
+<ul id="blocked"></ul>
+<input id="blockNew" placeholder="example.com" style="width:60%"> <button id="blockAdd" data-i18n="optAdd"></button>
+<script src="options.js"></script>

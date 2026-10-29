@@ -1,0 +1,77 @@
+const $ = (id) => document.getElementById(id);
+const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs);
+for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = msg(el.dataset.i18n);
+document.documentElement.lang = chrome.i18n.getUILanguage();
+
+chrome.storage.local.get({ relay: "ws://127.0.0.1:8766/ext", token: "" }).then((c) => {
+  $("relay").value = c.relay;
+  $("token").value = c.token;
+});
+
+$("save").onclick = async () => {
+  await chrome.storage.local.set({ relay: $("relay").value.trim(), token: $("token").value.trim() });
+  $("status").textContent = msg("optSaved");
+};
+
+// Site permissions: view, revoke, choose mode and time window
+function siteList(id, area, key, sites) {
+  const list = $(id);
+  list.replaceChildren();
+  for (const origin of Object.keys(sites).sort()) {
+    const li = document.createElement("li"), b = document.createElement("button");
+    li.textContent = origin + " ";
+    b.textContent = msg("optRevoke");
+    b.style.margin = "0 0 0 .5em";
+    b.onclick = async () => {
+      const now = (await chrome.storage[area].get(key))[key] ?? {};
+      delete now[origin];
+      await chrome.storage[area].set({ [key]: now });
+    };
+    li.append(b);
+    list.append(li);
+  }
+  if (!list.children.length) list.innerHTML = `<li>${msg("optNone")}</li>`;
+}
+
+async function showSites() {
+  const { siteMode = "ask", allowedSites = {}, allowAllUntil = 0 } = await chrome.storage.local.get(["siteMode", "allowedSites", "allowAllUntil"]);
+  const { sessionSites = {}, allowAllSession = false } = await chrome.storage.session.get(["sessionSites", "allowAllSession"]);
+  for (const r of document.getElementsByName("mode")) r.checked = r.value === siteMode;
+  $("temp").textContent = allowAllSession ? msg("optActiveSession")
+    : allowAllUntil > Date.now() ? msg("optActiveUntil", new Date(allowAllUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
+    : msg("optOff");
+  siteList("sites", "local", "allowedSites", allowedSites);
+  const { enabled = true, blockedSites = [] } = await chrome.storage.local.get(["enabled", "blockedSites"]);
+  $("enabled").checked = enabled;
+  const bl = $("blocked");
+  bl.replaceChildren();
+  for (const d of blockedSites) {
+    const li = document.createElement("li"), b = document.createElement("button");
+    li.textContent = d + " ";
+    b.textContent = msg("optRemove");
+    b.style.margin = "0 0 0 .5em";
+    b.onclick = () => chrome.storage.local.set({ blockedSites: blockedSites.filter((x) => x !== d) });
+    li.append(b);
+    bl.append(li);
+  }
+  if (!bl.children.length) bl.innerHTML = `<li>${msg("optNone")}</li>`;
+  siteList("sessionSites", "session", "sessionSites", sessionSites);
+}
+for (const r of document.getElementsByName("mode")) r.onchange = () => chrome.storage.local.set({ siteMode: r.value });
+for (const b of document.querySelectorAll("button[data-t]")) b.onclick = async () => {
+  const t = b.dataset.t, h = 3600e3;
+  if (t === "allSession") await chrome.storage.session.set({ allowAllSession: true });
+  else if (t === "off") { await chrome.storage.session.set({ allowAllSession: false }); await chrome.storage.local.set({ allowAllUntil: 0 }); }
+  else await chrome.storage.local.set({ allowAllUntil: Date.now() + (t === "all1h" ? 1 : 8) * h });
+};
+chrome.storage.onChanged.addListener(showSites);
+showSites();
+setInterval(showSites, 30000);
+$("enabled").onchange = () => chrome.storage.local.set({ enabled: $("enabled").checked });
+$("blockAdd").onclick = async () => {
+  const d = $("blockNew").value.trim().toLowerCase().replace(/^[a-z]+:\/\//, "").replace(/^\*\./, "").split(/[/:?#]/)[0];
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d)) return alert(msg("optBadDomain"));
+  const { blockedSites = [] } = await chrome.storage.local.get("blockedSites");
+  await chrome.storage.local.set({ blockedSites: [...new Set([...blockedSites, d])].sort() });
+  $("blockNew").value = "";
+};
