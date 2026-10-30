@@ -1,7 +1,8 @@
 """hermes-tabs plugin - browser permission settings for the Hermes agent.
 
 The settings belong to the browser extension (chrome.storage in the user's browser). The relay passes them
-through via ``/admin/settings``; that needs ``HERMES_TABS_ADMIN_TOKEN`` (e.g. in ``~/.hermes/.env``).
+through via ``/admin/settings`` (``/admin/select`` picks the browser Hermes works in when several are connected);
+both need ``HERMES_TABS_ADMIN_TOKEN`` (e.g. in ``~/.hermes/.env``). The hook judges by the browser Hermes works in.
 The extension enforces everything itself (it sees the real tab URL, including after redirects).
 
 This hook complements that for Hermes' other tools:
@@ -25,6 +26,7 @@ import logging
 import os
 import re
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -47,17 +49,21 @@ URL_RE = re.compile(r"(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,}|\d{1,3}(?:\.\d{1
 _cache: Dict[str, Any] = {"at": 0.0, "settings": None}
 
 
-def relay(method: str = "GET", body: Optional[dict] = None, timeout: float = 5) -> dict:
-    """Read/write the settings via the relay (admin token from the environment)."""
+def relay(method: str = "GET", body: Optional[dict] = None, timeout: float = 5, device: Optional[str] = None,
+          path: str = "/admin/settings") -> dict:
+    """Read/write the settings via the relay (admin token from the environment). Several browsers can be
+    connected: device picks one, without it the relay answers for the browser the agent's calls go to."""
     token = get_secret_str("HERMES_TABS_ADMIN_TOKEN")
     if not token:
         raise RuntimeError("HERMES_TABS_ADMIN_TOKEN is missing (e.g. in ~/.hermes/.env)")
-    req = urllib.request.Request(f"{RELAY}/admin/settings", method=method,
+    query = "?" + urllib.parse.urlencode({"device": device}) if device else ""
+    req = urllib.request.Request(f"{RELAY}{path}{query}", method=method,
                                  data=json.dumps(body).encode() if body is not None else None,
                                  headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         settings = json.load(r)
-    _remember(settings)
+    if path == "/admin/settings" and settings.get("browser", {}).get("inUse", True):
+        _remember(settings)  # the hook judges by the browser the agent's calls go to
     return settings
 
 
@@ -75,7 +81,10 @@ def settings() -> dict:
     if _cache["settings"] is not None and time.time() - _cache["at"] < 15:
         return _cache["settings"]
     try:
-        return relay(timeout=3)
+        s = relay(timeout=3)
+        if s.get("browser", {}).get("inUse", True) is False:  # no browser in use (the relay answered for another one)
+            raise RuntimeError("no browser in use")
+        return s
     except Exception as exc:
         logger.debug("hermes-tabs: relay not reachable (%s), using last known state", exc)
         if _cache["settings"] is None and CACHE.exists():

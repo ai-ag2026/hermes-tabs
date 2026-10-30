@@ -37,7 +37,14 @@ const STR = {
     blockedSites: 'Blocked sites',
     blockedDesc: 'Hermes cannot be used on these websites (subdomains included) - not even for reading.',
     add: '+ Add website',
-    blockedEmpty: 'No websites added yet.'
+    blockedEmpty: 'No websites added yet.',
+    browser: 'Browser',
+    inUse: n => `Hermes works in “${n}”. The settings below belong to the browser chosen here.`,
+    noneInUse: 'No browser is chosen for Hermes right now (or the chosen one is not connected).',
+    hermesHere: 'Hermes works here',
+    useTitle: n => `Use “${n}” for Hermes`,
+    useDesc: 'Hermes’ browser calls then go to this browser.',
+    use: 'Use'
   },
   de: {
     name: 'Hermes im Browser',
@@ -66,7 +73,14 @@ const STR = {
     blockedSites: 'Blockierte Seiten',
     blockedDesc: 'Hermes kann auf diesen Websites nicht verwendet werden (Subdomains eingeschlossen) – auch nicht lesen.',
     add: '+ Website hinzufügen',
-    blockedEmpty: 'Noch keine Websites hinzugefügt.'
+    blockedEmpty: 'Noch keine Websites hinzugefügt.',
+    browser: 'Browser',
+    inUse: n => `Hermes arbeitet in „${n}“. Die Einstellungen unten gehören zum hier gewählten Browser.`,
+    noneInUse: 'Für Hermes ist gerade kein Browser gewählt (oder der gewählte ist nicht verbunden).',
+    hermesHere: 'Hermes arbeitet hier',
+    useTitle: n => `„${n}“ für Hermes verwenden`,
+    useDesc: 'Hermes’ Browser-Aufrufe gehen dann an diesen Browser.',
+    use: 'Verwenden'
   }
 }
 const t = STR[de ? 'de' : 'en']
@@ -75,20 +89,28 @@ export default {
   id: 'hermes-tabs',
   name: t.name,
   register(ctx) {
+    // Several browsers can be connected to the relay. The page always shows and saves exactly the browser that
+    // the displayed settings belong to (s.browser); without one, the relay answers for the browser Hermes uses.
     const state = atom({ s: null, error: null })
+    const qs = device => (device ? `?device=${encodeURIComponent(device)}` : '')
+    const shown = () => state.get().s?.browser?.deviceId
+    const fail = e => state.set({ ...state.get(), error: String(e?.message ?? e) })
+    let seq = 0 // only the newest request may change the page (an older interval load must not switch back)
 
-    const load = () =>
-      ctx.rest('/settings').then(
-        s => state.set({ s, error: null }),
-        e => state.set({ s: state.get().s, error: String(e?.message ?? e) })
+    const load = (device = shown()) => {
+      const n = ++seq
+      return ctx.rest(`/settings${qs(device)}`).then(
+        s => n === seq && state.set({ s, error: null }),
+        e => n !== seq ? null : device ? load(null) : fail(e) // that browser is gone: show the one Hermes uses
       )
-    const save = body =>
-      ctx.rest('/settings', { method: 'POST', body }).then(
-        s => state.set({ s, error: null }),
-        e => state.set({ s: state.get().s, error: String(e?.message ?? e) })
-      )
+    }
+    const save = body => {
+      const n = ++seq
+      return ctx.rest(`/settings${qs(shown())}`, { method: 'POST', body }).then(s => n === seq && state.set({ s, error: null }), fail)
+    }
+    const use = deviceId => ctx.rest('/select', { method: 'POST', body: { deviceId } }).then(() => load(deviceId), fail)
     load()
-    ctx.setInterval(load, 30000)
+    ctx.setInterval(() => load(), 30000)
 
     function SiteList({ entries, onRemove, empty }) {
       if (!entries.length) return jsx('div', { className: `py-2 text-xs ${muted}`, children: empty })
@@ -120,6 +142,7 @@ export default {
         className: 'flex flex-col gap-1',
         children: [
           error ? jsx('div', { className: 'text-xs text-red-500', children: error }) : null,
+          jsx(Browsers, { s }),
           jsx(ToggleRow, {
             checked: s.enabled !== false,
             label: t.enable,
@@ -162,6 +185,35 @@ export default {
             onRemove: ([, origin]) => save({ sites: { [origin]: 'off' } })
           }),
           jsx(BlockedSites, { s })
+        ]
+      })
+    }
+
+    function Browsers({ s }) {
+      const list = s.browsers ?? []
+      if (!s.browser || !list.length) return null
+      const inUse = list.find(b => b.inUse)
+      return jsxs('div', {
+        children: [
+          jsx(ListRow, {
+            title: t.browser,
+            description: inUse ? t.inUse(inUse.name) : t.noneInUse,
+            action: jsxs(Select, {
+              value: s.browser.deviceId,
+              onValueChange: d => load(d),
+              children: [
+                jsx(SelectTrigger, { className: 'w-56', children: jsx(SelectValue, {}) }),
+                jsx(SelectContent, {
+                  children: list.map(b => jsx(SelectItem, { value: b.deviceId, children: b.inUse ? `${b.name} · ${t.hermesHere}` : b.name }, b.deviceId))
+                })
+              ]
+            })
+          }),
+          s.browser.inUse ? null : jsx(ListRow, {
+            title: t.useTitle(s.browser.name),
+            description: t.useDesc,
+            action: jsx(Button, { size: 'xs', variant: 'outline', onClick: () => use(s.browser.deviceId), children: t.use })
+          })
         ]
       })
     }

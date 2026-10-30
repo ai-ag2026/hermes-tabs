@@ -94,7 +94,7 @@ For the optional Hermes plugin (settings page, extra guard rails) see [Hermes pl
 | Variable | Meaning |
 |---|---|
 | `HERMES_TABS_TOKEN` | Required. Bearer token for `/mcp` and for the extension's WebSocket. |
-| `HERMES_TABS_ADMIN_TOKEN` | Optional. Separate token, valid only for `/admin/settings`. Without it, settings cannot be changed through the relay. Keep it away from the agent so the agent cannot grant itself permissions. |
+| `HERMES_TABS_ADMIN_TOKEN` | Optional. Separate token, valid only for `/admin/settings` and `/admin/select`. Without it, settings cannot be changed through the relay. Keep it away from the agent so the agent cannot grant itself permissions. |
 | `HERMES_TABS_HOST` | Listen address. Default `127.0.0.1`. |
 | `HERMES_TABS_PORT` | Port. Default `8766`. |
 | `HERMES_TABS_GIF_DIR` | Directory for exported GIFs, default `~/.cache/hermes-tabs`. The relay user must own it and others must not be able to write to it. |
@@ -181,6 +181,8 @@ curl -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" -H "Content-Type: appli
 # {"enabled": false}    {"blockedSites": ["bank.example"]}
 ```
 
+With several browsers on the relay, `?device=<deviceId>` addresses one of them (without it: the browser the agent uses). The answer names the browser (`browser`) and lists all connected ones (`browsers`). `POST /admin/select` with `{"deviceId": "..."}` picks the browser for the agent.
+
 ## Safeguards
 
 - **Only shared or self-opened tabs.** Every tool that touches a tab checks this first. Closing is limited to the agent's own tabs.
@@ -194,9 +196,9 @@ curl -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" -H "Content-Type: appli
 
 ## Hermes plugin
 
-`hermes-plugin/` adds a settings page and some extra guard rails for the Hermes agent. The settings are owned by the extension; the plugin reads and writes them via `/admin/settings`, and enforcement stays in the extension.
+`hermes-plugin/` adds a settings page and some extra guard rails for the Hermes agent. The settings are owned by the extension; the plugin reads and writes them via `/admin/settings` (and picks the browser via `/admin/select`), and enforcement stays in the extension.
 
-Settings page: master switch, default for all websites (ask or allow all), temporary "allow all" windows, allowed sites, blocked sites.
+Settings page: which browser Hermes works in (with several browsers on the relay: view each one's settings and pick the one for Hermes), master switch, default for all websites (ask or allow all), temporary "allow all" windows, allowed sites, blocked sites.
 
 The plugin's `pre_tool_call` hook adds the following. It recognises the browser tools by the prefix `mcp__tabs__`, so the MCP server must be named `tabs` in the Hermes config (as in the example above):
 

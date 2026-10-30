@@ -94,7 +94,7 @@ Zum optionalen Hermes-Plugin (Einstellungsseite, zusätzliche Leitplanken) siehe
 | Variable | Bedeutung |
 |---|---|
 | `HERMES_TABS_TOKEN` | Pflicht. Bearer-Token für `/mcp` und für die WebSocket-Verbindung der Extension. |
-| `HERMES_TABS_ADMIN_TOKEN` | Optional. Eigener Token, nur für `/admin/settings`. Ohne ihn lassen sich Einstellungen nicht über das Relay ändern. Dem Agenten nicht geben, damit er sich keine Rechte verschaffen kann. |
+| `HERMES_TABS_ADMIN_TOKEN` | Optional. Eigener Token, nur für `/admin/settings` und `/admin/select`. Ohne ihn lassen sich Einstellungen nicht über das Relay ändern. Dem Agenten nicht geben, damit er sich keine Rechte verschaffen kann. |
 | `HERMES_TABS_HOST` | Lauschadresse. Vorgabe `127.0.0.1`. |
 | `HERMES_TABS_PORT` | Port. Vorgabe `8766`. |
 | `HERMES_TABS_GIF_DIR` | Ordner für exportierte GIFs, Vorgabe `~/.cache/hermes-tabs`. Er muss dem Relay-Benutzer gehören und darf für andere nicht beschreibbar sein. |
@@ -181,6 +181,8 @@ curl -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" -H "Content-Type: appli
 # {"enabled": false}    {"blockedSites": ["bank.example"]}
 ```
 
+Hängen mehrere Browser am Relay, spricht `?device=<deviceId>` einen davon an (ohne: den Browser, den der Agent verwendet). Die Antwort nennt den Browser (`browser`) und listet alle verbundenen (`browsers`). `POST /admin/select` mit `{"deviceId": "..."}` wählt den Browser für den Agenten.
+
 ## Schutzmechanismen
 
 - **Nur freigegebene oder selbst geöffnete Tabs.** Jedes Werkzeug, das einen Tab anfasst, prüft das zuerst. Schließen darf der Agent nur seine eigenen Tabs.
@@ -194,9 +196,9 @@ curl -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" -H "Content-Type: appli
 
 ## Hermes-Plugin
 
-`hermes-plugin/` ergänzt für den Hermes-Agenten eine Einstellungsseite und einige zusätzliche Leitplanken. Die Einstellungen gehören der Extension; das Plugin liest und schreibt sie über `/admin/settings`, durchgesetzt wird weiterhin in der Extension.
+`hermes-plugin/` ergänzt für den Hermes-Agenten eine Einstellungsseite und einige zusätzliche Leitplanken. Die Einstellungen gehören der Extension; das Plugin liest und schreibt sie über `/admin/settings` (und wählt den Browser über `/admin/select`), durchgesetzt wird weiterhin in der Extension.
 
-Einstellungsseite: Gesamtschalter, Standard für alle Websites (fragen oder alle erlauben), vorübergehendes „alle erlauben“, erlaubte Seiten, blockierte Seiten.
+Einstellungsseite: in welchem Browser Hermes arbeitet (bei mehreren Browsern am Relay: die Einstellungen jedes Browsers ansehen und den für Hermes wählen), Gesamtschalter, Standard für alle Websites (fragen oder alle erlauben), vorübergehendes „alle erlauben“, erlaubte Seiten, blockierte Seiten.
 
 Der `pre_tool_call`-Hook des Plugins ergänzt das Folgende. Er erkennt die Browser-Werkzeuge am Präfix `mcp__tabs__`, deshalb muss der MCP-Server in der Hermes-Konfiguration `tabs` heißen (wie im Beispiel oben):
 

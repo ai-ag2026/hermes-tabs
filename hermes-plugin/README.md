@@ -6,7 +6,7 @@ Settings page and guard rails for [hermes-tabs](https://github.com/ai-ag2026/her
 
 ## What it adds
 
-- **Settings → Plugins → "Hermes in the Browser"** (desktop half, opt-in): master switch, default for all websites (ask or allow all), temporary "allow all", allowed and blocked sites. The values live in the browser extension and are enforced there.
+- **Settings → Plugins → "Hermes in the Browser"** (desktop half, opt-in): which browser Hermes works in (when several are connected to the relay: show each one's settings, pick the one for Hermes), master switch, default for all websites (ask or allow all), temporary "allow all", allowed and blocked sites. The values live in the browser extension and are enforced there.
 - **`pre_tool_call` hook:**
   - master switch off: `mcp__tabs__*` calls are rejected early;
   - blocked sites also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments;
@@ -22,8 +22,8 @@ Settings page and guard rails for [hermes-tabs](https://github.com/ai-ag2026/her
 
 ## Disclosure
 
-- **Network:** HTTP requests only to the hermes-tabs relay you configure (`HERMES_TABS_RELAY`, default localhost), path `/admin/settings`, authenticated with `HERMES_TABS_ADMIN_TOKEN`. No third-party services, no telemetry.
-- **Files:** caches the last seen settings in `<HERMES_HOME>/plugin-data/hermes-tabs/settings.json`, so the hook keeps working while the browser is closed. No other reads outside the plugin's own data.
+- **Network:** HTTP requests only to the hermes-tabs relay you configure (`HERMES_TABS_RELAY`, default localhost), paths `/admin/settings` and `/admin/select`, authenticated with `HERMES_TABS_ADMIN_TOKEN`. No third-party services, no telemetry.
+- **Files:** caches the last seen settings in `<HERMES_HOME>/plugin-data/hermes-tabs/settings.json`, of the browser Hermes works in, so the hook keeps working while the browser is closed. No other reads outside the plugin's own data.
 - **No** shell commands, background processes, self-updates or stored credentials.
 
 License: MIT

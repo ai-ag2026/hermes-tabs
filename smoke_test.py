@@ -122,7 +122,8 @@ async def fake_browser(device, name="Fake", pair=None, hold=()):
                     continue
                 if m["method"] == "pair":
                     await asyncio.sleep(pair)
-                await w.send(json.dumps({"id": m["id"], "result": True if m["method"] == "pair" else f"fake:{name}:{m['method']}"}))
+                result = {"pair": True, "settings": {"fake": name}}.get(m["method"], f"fake:{name}:{m['method']}")
+                await w.send(json.dumps({"id": m["id"], "result": result}))
         task = asyncio.create_task(serve())
         try:
             yield w
@@ -604,6 +605,21 @@ async def scenario(t: T, tmp: Path):
             return urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/settings?{q}",
                                                                  headers={"Authorization": f"Bearer {ADMIN}"}))
         assert json.load(admin_get(f"device={real}"))["browser"]["deviceId"] == real
+        # the settings page lists all browsers and says which one Hermes uses (thread: the fake answers in this event loop)
+        s = json.load(await asyncio.to_thread(admin_get, "device=fake-1"))
+        assert s["fake"] == "Fake" and s["browser"] == {"deviceId": "fake-1", "name": "Fake", "inUse": False}, s
+        assert sorted(b["deviceId"] for b in s["browsers"] if b["inUse"]) == [real] and len(s["browsers"]) == 2, s
+        sel = urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/select", method="POST", data=b'{"deviceId": "fake-1"}',
+                                     headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"})
+        try:
+            urllib.request.urlopen(sel)
+            raise AssertionError("/admin/select works with the agent's token")
+        except urllib.error.HTTPError as e:
+            assert e.code == 401, e.code
+        sel.headers["Authorization"] = f"Bearer {ADMIN}"
+        urllib.request.urlopen(sel)
+        assert await t("tabs_context") == "fake:Fake:tabs_context"
+        await t("select_browser", deviceId=real)
         try:
             admin_get("device=nope")
             raise AssertionError("/admin/settings accepts an unknown device")

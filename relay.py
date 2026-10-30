@@ -5,7 +5,7 @@ the results to the agent as MCP tools.
 
 Configuration (environment):
   HERMES_TABS_TOKEN        required; bearer token for /mcp and the extension's WebSocket
-  HERMES_TABS_ADMIN_TOKEN  optional; separate token for /admin/settings (without it that route stays closed)
+  HERMES_TABS_ADMIN_TOKEN  optional; separate token for /admin/settings and /admin/select (without it they stay closed)
   HERMES_TABS_HOST         bind address, default 127.0.0.1
   HERMES_TABS_PORT         port, default 8766
   HERMES_TABS_GIF_DIR      where exported GIFs go, default ~/.cache/hermes-tabs
@@ -662,15 +662,18 @@ async def admin_status(request):
     return JSONResponse(out)
 
 
-def admin_target(request) -> tuple[WebSocket, str]:
-    """?device=<deviceId> addresses one browser directly; without it the one in use. The agent can change
-    the selection, so admin clients that care which browser they configure should pass device."""
+def admin_target(request, any_browser: bool = False) -> tuple[WebSocket, str]:
+    """?device=<deviceId> addresses one browser directly; without it the one in use (any_browser: else the
+    first one, for reading). Never changes the selection. The agent can change the selection, so admin clients
+    that care which browser they configure should pass device."""
     device = request.query_params.get("device")
     if device:
         if device not in browsers:
             raise ToolError(f"No connected browser with deviceId {device!r}")
         return browsers[device]["ws"], device
-    conn = target()
+    conn = peek() or (any_browser and browsers and next(iter(browsers.values()))["ws"])
+    if not conn:
+        target()  # raises the matching error (none connected / several, none selected / selected one gone)
     return conn, next(d for d, b in browsers.items() if b["ws"] is conn)
 
 
@@ -680,18 +683,38 @@ async def admin_reload(request):
         conn, device = admin_target(request)
         return JSONResponse({"result": await call("reload", _conn=conn), "deviceId": device, "name": names[device]})
     except ToolError as e:
-        return JSONResponse({"error": str(e)}, status_code=409)
+        return JSONResponse({"error": str(e), "browsers": browser_list()}, status_code=409)
 
 
 async def admin_settings(request):
-    """Read (GET) or change (POST, JSON as in handlers.settings) the extension's permission settings."""
+    """Read (GET) or change (POST, JSON as in handlers.settings) the extension's permission settings.
+    The answer names the browser (browser.inUse: the agent's calls go there) and lists all connected ones."""
     body = await request.json() if request.method == "POST" else {}
     try:
-        conn, device = admin_target(request)
+        conn, device = admin_target(request, any_browser=request.method == "GET")
         result = await call("settings", _conn=conn, **body)
     except ToolError as e:
-        return JSONResponse({"error": str(e)}, status_code=409)
-    return JSONResponse({**result, "browser": {"deviceId": device, "name": names[device]}})
+        return JSONResponse({"error": str(e), "browsers": browser_list()}, status_code=409)
+    listed = browser_list()
+    me = next(b for b in listed if b["deviceId"] == device) if device in browsers else {"deviceId": device, "inUse": False}
+    return JSONResponse({**result, "browser": {"deviceId": device, "name": names[device], "inUse": me["inUse"]},
+                         "browsers": listed})
+
+
+async def admin_select(request):
+    """POST {"deviceId": ...}: the user picks the browser for the agent (e.g. on the Hermes plugin's settings
+    page). Admin token, like select_browser but without the agent."""
+    global selected
+    try:
+        body = await request.json()
+    except ValueError:
+        body = None
+    device = body.get("deviceId") if isinstance(body, dict) else None
+    if not isinstance(device, str) or device not in browsers:
+        return JSONResponse({"error": f"No connected browser with deviceId {device!r}", "browsers": browser_list()}, status_code=409)
+    selected = device
+    print(f"admin select {names[device]}", flush=True)
+    return JSONResponse({"browsers": browser_list()})
 
 
 def guarded(app):
@@ -708,7 +731,7 @@ def guarded(app):
             headers = dict(scope["headers"])
             if b"origin" in headers:
                 return await deny(send, 403)
-            token = ADMIN_TOKEN if scope["path"] == "/admin/settings" else TOKEN
+            token = ADMIN_TOKEN if scope["path"] in ("/admin/settings", "/admin/select") else TOKEN
             if not token or not secrets.compare_digest(headers.get(b"authorization", b"").decode(), f"Bearer {token}"):
                 return await deny(send, 401)
             if scope["path"] == "/mcp" and scope["method"] == "GET":
@@ -730,6 +753,7 @@ if __name__ == "__main__":
         Route("/admin/status", admin_status),
         Route("/admin/reload", admin_reload, methods=["POST"]),
         Route("/admin/settings", admin_settings, methods=["GET", "POST"]),
+        Route("/admin/select", admin_select, methods=["POST"]),
     ]
     # Warnings only: the extension sends the token as a query parameter, and uvicorn
     # would otherwise log it on every connection.
