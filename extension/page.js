@@ -1,14 +1,14 @@
-// Runs in the page (injected via Runtime.evaluate): HERMES_PAGE(op, arg).
+// Runs in the page (injected via Runtime.evaluate): AGENT_PAGE(op, arg).
 // Also walks open shadow DOMs and same-origin iframes. References (ref_N) live in a table of
 // the top window (WeakRef), not in the DOM: copies of an element (cloneNode, templates) do not
 // inherit them, and removed elements report "not found".
 // eslint-disable-next-line no-unused-vars
-function HERMES_PAGE(op, arg) {
+function AGENT_PAGE(op, arg) {
   const TOP = window;
   // Every page gets its own number range: a reference from before never hits a different element
   // by chance after a navigation ("not found" instead of a wrong click).
-  TOP.__hermesRef ??= (Math.floor(Math.random() * 1e8) + 1e6) * 1e4; // 10,000 refs per page, collision ~1:10^8
-  TOP.__hermesRefs ??= new Map(); // N -> WeakRef(Element)
+  TOP.__agentTabsRef ??= (Math.floor(Math.random() * 1e8) + 1e6) * 1e4; // 10,000 refs per page, collision ~1:10^8
+  TOP.__agentTabsRefs ??= new Map(); // N -> WeakRef(Element)
 
   const TAGS = new Set(["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA", "SUMMARY"]);
   const ROLES = new Set([
@@ -90,11 +90,11 @@ function HERMES_PAGE(op, arg) {
   };
 
   const refOf = (el) => {
-    if (!el.__hermesRef) {
-      el.__hermesRef = ++TOP.__hermesRef; // expando property: not copied by cloneNode
-      TOP.__hermesRefs.set(el.__hermesRef, new WeakRef(el));
+    if (!el.__agentTabsRef) {
+      el.__agentTabsRef = ++TOP.__agentTabsRef; // expando property: not copied by cloneNode
+      TOP.__agentTabsRefs.set(el.__agentTabsRef, new WeakRef(el));
     }
-    return "ref_" + el.__hermesRef;
+    return "ref_" + el.__agentTabsRef;
   };
 
   // What a click on the element's center would hit – null if the center is outside the window (unknown).
@@ -136,7 +136,7 @@ function HERMES_PAGE(op, arg) {
   };
 
   const byRef = (ref) => {
-    const el = TOP.__hermesRefs.get(Number(String(ref).replace(/^ref_/, "")))?.deref();
+    const el = TOP.__agentTabsRefs.get(Number(String(ref).replace(/^ref_/, "")))?.deref();
     if (!el || !el.isConnected) throw new Error(`${ref} not found – call read_page or find again`);
     return el;
   };
@@ -306,7 +306,7 @@ function HERMES_PAGE(op, arg) {
 
   const setField = (el, { ref, value }) => {
     const win = el.ownerDocument.defaultView;
-    // What a human could not change, Hermes does not change either (and does not report it as success).
+    // What a human could not change, the agent does not change either (and does not report it as success).
     if (el.disabled || el.closest?.("fieldset[disabled]") || el.getAttribute("aria-disabled") === "true") {
       throw new Error(`${ref} is disabled`);
     }
@@ -420,53 +420,49 @@ function HERMES_PAGE(op, arg) {
 
   // ---------- Visibility: frame, pointer, label, stop, permission prompt ----------
   // Closed shadow DOM: page CSS does not apply inside, and the page cannot reach the buttons.
-  // Answers go via the debugger binding __hermesTabs, which exists only in this isolated world.
+  // Answers go via the debugger binding __agentTabs, which exists only in this isolated world.
   // Texts (o.t) come localized from background.js; the isolated world has no chrome.i18n.
   // The page can see the host element while it is shown and may try to remove it or overwrite its style. Each overlay
   // call and a MutationObserver (in this isolated world) put it back – at most FIX_LIMIT times per second, then
-  // Hermes gives up and reports it ("tampered") instead of fighting the page forever.
+  // The agent gives up and reports it ("tampered") instead of fighting the page forever.
   const FIX_LIMIT = 10;
   const fixHost = (host) => {
     if (!host.isConnected) {
       document.documentElement.append(host);
-      if (!TOP.__hermesTampered) TOP.__hermesMo?.observe(document.documentElement, { childList: true }); // <html> may be new
+      if (!TOP.__agentTabsTampered) TOP.__agentTabsMo?.observe(document.documentElement, { childList: true }); // <html> may be new
     }
     // !important inline: page rules cannot hide, dim or move the host (opacity, filter, transform, ...)
     host.style.cssText = "all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; " +
-      `pointer-events: none !important; visibility: ${TOP.__hermesHidden ? "hidden" : "visible"} !important;`;
-    TOP.__hermesCss = host.style.cssText;
+      `pointer-events: none !important; visibility: ${TOP.__agentTabsHidden ? "hidden" : "visible"} !important;`;
+    TOP.__agentTabsCss = host.style.cssText;
   };
   const guardHost = (host) => {
     const fixes = [];
     const mo = new MutationObserver(() => {
-      if (TOP.__hermesOverlay !== host) return mo.disconnect();
-      if (host.isConnected && host.style.cssText === TOP.__hermesCss) return;
+      if (TOP.__agentTabsOverlay !== host) return mo.disconnect();
+      if (host.isConnected && host.style.cssText === TOP.__agentTabsCss) return;
       const now = Date.now();
       while (fixes.length && now - fixes[0] > 1000) fixes.shift();
-      if (fixes.length >= FIX_LIMIT) { TOP.__hermesTampered = true; return mo.disconnect(); }
+      if (fixes.length >= FIX_LIMIT) { TOP.__agentTabsTampered = true; return mo.disconnect(); }
       fixes.push(now);
       fixHost(host);
     });
     mo.observe(host, { attributes: true, attributeFilter: ["style"] });
     mo.observe(document.documentElement, { childList: true });
-    TOP.__hermesMo = mo;
+    TOP.__agentTabsMo = mo;
   };
   const overlay = (o) => {
-    let host = TOP.__hermesOverlay;
-    if (o.hidden !== undefined) TOP.__hermesHidden = o.hidden;
+    let host = TOP.__agentTabsOverlay;
+    if (o.hidden !== undefined) TOP.__agentTabsHidden = o.hidden;
     if (host) fixHost(host);
     if (!host) {
-      host = document.createElement("hermes-tabs-overlay");
+      host = document.createElement("agent-tabs-overlay");
       const root = host.attachShadow({ mode: "closed" });
-      // Colours: Hermes desktop default theme ("nous"), light and dark, resolved to fixed values. Set on every
-      // element, not only :host - page rules on the host element would override custom properties defined there.
+      // Colours: brand.js (o.theme = [light, dark] custom properties). Set on every element, not only :host - page
+      // rules on the host element would override custom properties defined there.
       root.innerHTML = `<style>
-        :host, * { --bg: #fdfdfd; --fg: #242528; --stroke: #c3d1f0; --accent: #0053fd; --on-accent: #fff; --ctl: #e8edf6;
-                --ctl-hover: #d9e2f3; --glow: rgba(0,83,253,.35); --danger: #cf2d56; --shadow: rgba(0,0,0,.18); }
-        @media (prefers-color-scheme: dark) {
-          :host, * { --bg: #16181c; --fg: #d9e0e6; --stroke: #2b364d; --accent: #4a84fe; --on-accent: #161616; --ctl: #242a38;
-                  --ctl-hover: #303b52; --glow: rgba(74,132,254,.4); --shadow: rgba(0,0,0,.55); }
-        }
+        :host, * { ${o.theme[0]} }
+        @media (prefers-color-scheme: dark) { :host, * { ${o.theme[1]} } }
         :host, * { box-sizing: border-box; font: 13px/1.4 "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
         .frame { position: fixed; inset: 0; border: 2px solid var(--accent); box-shadow: inset 0 0 16px var(--glow);
                  opacity: 0; transition: opacity .3s; pointer-events: none; }
@@ -524,23 +520,23 @@ function HERMES_PAGE(op, arg) {
       const send = (payload) => (e) => {
         if (!e.isTrusted) return; // only real user clicks
         e.stopPropagation(); e.preventDefault();
-        try { globalThis.__hermesTabs?.(JSON.stringify(payload)); } catch {}
+        try { globalThis.__agentTabs?.(JSON.stringify(payload)); } catch {}
       };
       root.querySelector(".stop").addEventListener("click", send({ type: "stop" }), true);
       for (const d of ["deny", "once", "session", "always", "all1h"]) root.querySelector("." + d).addEventListener("click", send({ type: "permission", decision: d }), true);
-      TOP.__hermesOverlay = host;
-      TOP.__hermesRoot = root;
+      TOP.__agentTabsOverlay = host;
+      TOP.__agentTabsRoot = root;
       fixHost(host);
       guardHost(host);
     }
-    const root = TOP.__hermesRoot, $ = (c) => root.querySelector(c);
+    const root = TOP.__agentTabsRoot, $ = (c) => root.querySelector(c);
     if (o.passthrough !== undefined) setPassthrough(root, o.passthrough);
     if (o.warn !== undefined) $(".warn").textContent = o.warn; // e.g. "Full rights" while the safety tier is full
     if (o.active) {
       $(".frame").style.opacity = 1;
       $(".bar").style.display = "flex";
-      clearTimeout(TOP.__hermesIdle);
-      TOP.__hermesIdle = setTimeout(() => { $(".frame").style.opacity = 0; $(".cursor").style.opacity = 0; $(".label").style.opacity = 0; $(".bar").style.display = "none"; }, 6000);
+      clearTimeout(TOP.__agentTabsIdle);
+      TOP.__agentTabsIdle = setTimeout(() => { $(".frame").style.opacity = 0; $(".cursor").style.opacity = 0; $(".label").style.opacity = 0; $(".bar").style.display = "none"; }, 6000);
     }
     if (o.x !== undefined) {
       const c = $(".cursor");
@@ -562,10 +558,10 @@ function HERMES_PAGE(op, arg) {
       $(".ask").style.display = o.ask ? "block" : "none";
       if (o.ask) { $(".q").textContent = o.ask; $(".say").textContent = o.say ?? ""; }
     }
-    if (o.remove) { TOP.__hermesOverlay = null; host.remove(); }
-    return TOP.__hermesTampered ? "tampered" : "ok";
+    if (o.remove) { TOP.__agentTabsOverlay = null; host.remove(); }
+    return TOP.__agentTabsTampered ? "tampered" : "ok";
   };
-  // While Hermes itself clicks, the overlay must not catch clicks (otherwise Hermes might hit "Stop").
+  // While the agent itself clicks, the overlay must not catch clicks (otherwise the agent might hit "Stop").
   const setPassthrough = (root, on) => {
     for (const el of root.querySelectorAll(".bar, .ask")) el.style.pointerEvents = on ? "none" : "auto";
   };

@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "Partage des onglets individuels avec votre agent IA ; la connexion passe par votre propre relais."
+  },
+  "actionTitle": {
+    "message": "Agent Tabs : partager / retirer cet onglet"
+  },
+  "overlayBar": {
+    "message": "L’agent contrôle cet onglet"
+  },
+  "askText": {
+    "message": "L’agent veut agir sur $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "L’agent dit : $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "L’agent demande une autorisation"
+  },
+  "optBrowserHeading": {
+    "message": "L’agent dans le navigateur"
+  },
+  "optEnabled": {
+    "message": "Activé (désactivé : l’agent ne peut rien faire dans le navigateur)"
+  },
+  "optActionsHelp": {
+    "message": "L’agent peut lire partout dans ses onglets. Cliquer, saisir du texte et remplir des formulaires uniquement avec autorisation."
+  },
+  "optBlockedHelp": {
+    "message": "Ici, l’agent ne peut rien faire, pas même lire (sous-domaines inclus)."
+  },
+  "pairTitle": {
+    "message": "L’agent veut utiliser un navigateur"
+  },
+  "pairText": {
+    "message": "Utiliser ce navigateur pour l’agent ? Cliquez sur Connecter dans le navigateur où l’agent doit travailler."
+  },
+  "optBrowserNameHelp": {
+    "message": "Visible par l’agent lorsque plusieurs navigateurs sont connectés au relais (p. ex. Bureau, Portable)."
+  },
+  "optTokenHelp": {
+    "message": "Jeton d'accès du relais (AGENT_TABS_TOKEN)."
+  },
+  "looseTitle": {
+    "message": "Autoriser davantage l’agent ?"
+  },
+  "looseText": {
+    "message": "Une modification des paramètres veut autoriser : $LIST$. Confirmez uniquement si vous l’avez faite vous-même (par ex. dans les paramètres de votre agent).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "Activer l’agent dans le navigateur"
+  },
+  "optSafetyHelp": {
+    "message": "Ce que l’agent peut faire dans ses onglets. Modifier un seul interrupteur crée un réglage personnalisé."
+  },
+  "safety_passwords_desc": {
+    "message": "Saisie dans les champs de mot de passe. L’agent peut alors saisir des identifiants présents dans le chat ou son contexte."
+  },
+  "warnLoosen": {
+    "message": "L’agent obtient davantage de droits : $LIST$. Continuer ?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Attention : l’agent pourra alors saisir des identifiants présents dans le chat ou son contexte – par exemple des mots de passe que vous lui avez donnés ou qu’il a lus quelque part. Activez cette option uniquement si l’agent doit se connecter à votre place."
+  },
+  "tamperTitle": {
+    "message": "La page masque l’incrustation de l’agent"
+  },
+  "tamperText": {
+    "message": "$HOST$ retire sans cesse l’incrustation de l’agent : vous ne voyez peut-être pas ce que l’agent fait dans l’onglet. En cas de doute, arrêtez-le avec l’icône de la barre d’outils.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

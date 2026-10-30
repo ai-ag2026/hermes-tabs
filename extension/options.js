@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs);
 for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = msg(el.dataset.i18n);
+document.title = msg("extName");
 document.documentElement.lang = chrome.i18n.getUILanguage();
 document.documentElement.dir = msg("@@bidi_dir");
 $("version").textContent = chrome.runtime.getManifest().version;

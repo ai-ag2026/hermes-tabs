@@ -1,16 +1,15 @@
-// Hermes Tabs: connects to the relay on its own and runs its commands only in shared tabs.
-// Shared = shared by the user via the toolbar icon, or opened by Hermes itself. The list lives in
+// The extension: connects to the relay on its own and runs its commands only in shared tabs.
+// Shared = shared by the user via the toolbar icon, or opened by the agent itself. The list lives in
 // storage.local: it survives an extension reload but is discarded on browser start (tab IDs are
 // only valid for one browser session).
 
-importScripts("page.js", "safety.js"); // HERMES_PAGE: runs in the page via Runtime.evaluate; safety tiers
+importScripts("brand.js", "page.js", "safety.js"); // BRAND: name and colours of this package; AGENT_PAGE: runs in the page via Runtime.evaluate; safety tiers
 
 const DEFAULTS = { relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" };
-const GROUP_TITLE = "Hermes";
 const VERSION = chrome.runtime.getManifest().version;
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs); // texts the user sees (_locales)
 const clip = (t, n) => (t = String(t).replace(/\s+/g, " ").trim()).length > n ? t.slice(0, n - 1) + "…" : t;
-const ACCENT = "#0053fd", DANGER = "#cf2d56"; // Hermes desktop accent and destructive colour
+const { group: GROUP_TITLE, accent: ACCENT, danger: DANGER } = BRAND; // brand.js: tab group name, badge colours
 
 let ws = null;
 const attached = new Set();
@@ -26,9 +25,9 @@ let sharedCache = null;
 // website the tab visits later. Kept next to sharedCache in the same way (tabId -> origin).
 let shareOrigins = {};
 
-// Tabs in the "Hermes" group were opened by Hermes: they are re-adopted on load so that no orphaned
+// Tabs in the agent's group were opened by the agent: they are re-adopted on load so that no orphaned
 // tabs remain after an extension reload or a browser start.
-async function hermesGroupTabs() {
+async function groupTabs() {
   try {
     const ids = [];
     for (const g of await chrome.tabGroups.query({ title: GROUP_TITLE })) {
@@ -43,7 +42,7 @@ async function hermesGroupTabs() {
 async function getShared() {
   if (!sharedCache) {
     const { shared = {}, shareOrigins: origins = {} } = await chrome.storage.local.get(["shared", "shareOrigins"]);
-    for (const id of await hermesGroupTabs()) shared[id] ??= "agent";
+    for (const id of await groupTabs()) shared[id] ??= "agent";
     // Shares from before 0.9 carry no website: the one the tab shows now counts.
     for (const [id, owner] of Object.entries(shared)) if (owner === "user") origins[id] ??= await tabOrigin(+id);
     if (!sharedCache) [sharedCache, shareOrigins] = [shared, origins];
@@ -53,7 +52,7 @@ async function getShared() {
 const tabOrigin = (tabId) => chrome.tabs.get(tabId).then((t) => originOf(t.url || t.pendingUrl || ""), () => "");
 
 chrome.runtime.onStartup.addListener(() => {
-  sharedCache = null; // new browser session: drop old tab IDs, re-adopt the Hermes group
+  sharedCache = null; // new browser session: drop old tab IDs, re-adopt the agent's group
   chrome.storage.local.remove(["shared", "shareOrigins"]);
 });
 
@@ -70,17 +69,17 @@ async function setShared(tabId, owner) {
   await chrome.action.setBadgeBackgroundColor({ tabId, color: owner ? ACCENT : DANGER }).catch(() => {});
 }
 
-// Normal web pages only. On file:, chrome-extension:, chrome: etc. Hermes would get access to local
+// Normal web pages only. On file:, chrome-extension:, chrome: etc. The agent would get access to local
 // files or to the extension APIs themselves (token, all tabs), which defeats every tab boundary.
 const SAFE_URL = /^(https?:|data:|about:blank$)/i;
 // How Chrome reports the built-in PDF viewer (an extension of its own) and pages of other extensions.
 const OTHER_EXT = /chrome-extension:\/\/ URL of different extension/;
-const OTHER_EXT_HINT = "The tab shows a PDF in the browser's viewer or a page of another extension – Hermes cannot " +
-  "access it. Leave with navigate (\"back\" or a URL); read PDF content with Hermes' own web tools using the PDF URL.";
+const OTHER_EXT_HINT = "The tab shows a PDF in the browser's viewer or a page of another extension – you cannot " +
+  "access it. Leave with navigate (\"back\" or a URL); read PDF content with your own web tools using the PDF URL.";
 const unsafeUrlError = (url) =>
-  new Error(`Protected page (${String(url).split(":")[0]}:) – Hermes may only operate http(s) pages`);
+  new Error(`Protected page (${String(url).split(":")[0]}:) – only http(s) pages can be operated`);
 
-// "Blocked sites": domain including subdomains; Hermes may do nothing there, not even read.
+// "Blocked sites": domain including subdomains; the agent may do nothing there, not even read.
 const hostBlocked = (url, list) => {
   let h;
   try { h = new URL(url).hostname.toLowerCase(); } catch { return false; }
@@ -90,14 +89,14 @@ async function assertNotBlocked(...urls) {
   const { blockedSites = [] } = await chrome.storage.local.get("blockedSites");
   for (const u of urls) {
     if (u && hostBlocked(u, blockedSites)) {
-      throw new Error(`${new URL(u).hostname} is on the Blocked sites list – Hermes must not use this website`);
+      throw new Error(`${new URL(u).hostname} is on the Blocked sites list – do not use this website`);
     }
   }
 }
 
 async function assertAllowed(tabId) {
   if (!Number.isInteger(tabId) || !Object.hasOwn(await getShared(), String(tabId))) {
-    throw new Error(`Tab ${tabId} is not shared with Hermes`);
+    throw new Error(`Tab ${tabId} is not shared with you`);
   }
 }
 
@@ -117,8 +116,8 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
-// If a Hermes tab opens a new tab (link with target=_blank, window.open), Hermes owns it too –
-// otherwise Hermes would lose the thread (e.g. shop listings). Not from tabs the user shared: the user clicks there too.
+// If an agent tab opens a new tab (link with target=_blank, window.open), the agent owns it too –
+// otherwise the agent would lose the thread (e.g. shop listings). Not from tabs the user shared: the user clicks there too.
 const childTabs = new Map(); // parent tab -> [{ id, t }]
 // From a background tab, Chromium names the window's *active* tab as opener – so also match
 // the page's own Page.windowOpen report by URL.
@@ -148,7 +147,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   setShared(tabId, null);
 });
 
-// Visual: Hermes tabs in a group of their own. If the browser does not support it, the badge remains.
+// Visual: the agent's tabs in a group of their own. If the browser does not support it, the badge remains.
 async function addToGroup(tabId) {
   try {
     const [group] = await chrome.tabGroups.query({ title: GROUP_TITLE });
@@ -215,7 +214,7 @@ chrome.debugger.onEvent.addListener(({ tabId }, method, p) => {
       break;
     }
     case "Runtime.bindingCalled":
-      if (p.name === "__hermesTabs") onOverlayEvent(tabId, p.payload, p.executionContextId);
+      if (p.name === "__agentTabs") onOverlayEvent(tabId, p.payload, p.executionContextId);
       break;
     case "Fetch.requestPaused": {
       // Write guard after javascript on a site without permission: read-only requests until the next document.
@@ -295,7 +294,7 @@ async function attach(tabId) {
   const setup = ["Runtime.enable", "Log.enable", "Network.enable", "Page.enable"].map((m) => withTimeout(send(tabId, m), 5000, m).catch(() => {}));
   // Background tabs otherwise count as invisible: mouse events then wait 5 s each for a frame.
   setup.push(withTimeout(send(tabId, "Emulation.setFocusEmulationEnabled", { enabled: true }), 5000, "Focus emulation").catch(() => {}));
-  setup.push(withTimeout(send(tabId, "Runtime.addBinding", { name: "__hermesTabs", executionContextName: "hermes-tabs" }), 5000, "Binding").catch(() => {}));
+  setup.push(withTimeout(send(tabId, "Runtime.addBinding", { name: "__agentTabs", executionContextName: "agent-tabs" }), 5000, "Binding").catch(() => {}));
   if (responsive) await Promise.all(setup); // don't wait on a blocked page; this completes after the dialog
 }
 
@@ -304,8 +303,8 @@ const probe = (tabId) =>
 
 const DIALOG = Symbol("dialog");
 const dialogError = (d) => new Error(d.suspected
-  ? "The page is not responding – probably blocked by a dialog that opened before Hermes could attach. " +
-    "Only the user can confirm it in the browser; for a tab Hermes opened itself, tabs_close helps."
+  ? "The page is not responding – probably blocked by a dialog that opened before the extension could attach. " +
+    "Only the user can confirm it in the browser; for a tab you opened yourself, tabs_close helps."
   : `A ${d.type} dialog is open: "${d.message}". Accept or dismiss it with handle_dialog.`);
 
 // Check, attach, check again: if the share was revoked while attaching,
@@ -316,7 +315,7 @@ async function attachAllowed(tabId) {
   await attach(tabId);
   if (!Object.hasOwn(await getShared(), String(tabId))) {
     await chrome.debugger.detach({ tabId }).catch(() => {});
-    throw new Error(`Tab ${tabId} is no longer shared with Hermes`);
+    throw new Error(`Tab ${tabId} is no longer shared with you`);
   }
 }
 
@@ -338,19 +337,19 @@ async function cdp(tabId, method, params = {}) {
   return r;
 }
 
-// HERMES_PAGE runs in an isolated world (like a content script): same DOM, but the page sees
+// AGENT_PAGE runs in an isolated world (like a content script): same DOM, but the page sees
 // neither the reference table nor the helpers and cannot replace them.
 async function worldContext(tabId) {
   const st = state(tabId);
   if (st.worldCtx) return st.worldCtx;
   const { frameTree } = await cdp(tabId, "Page.getFrameTree");
-  const { executionContextId } = await cdp(tabId, "Page.createIsolatedWorld", { frameId: frameTree.frame.id, worldName: "hermes-tabs" });
+  const { executionContextId } = await cdp(tabId, "Page.createIsolatedWorld", { frameId: frameTree.frame.id, worldName: "agent-tabs" });
   return (st.worldCtx = executionContextId);
 }
 
 const SAFE_OPS = new Set(["read", "find", "center", "viewport", "focusInfo", "overlay", "scrollPos", "pageText"]);
 async function page(tabId, op, arg = {}) {
-  const expression = `(${HERMES_PAGE})(${JSON.stringify(op)}, ${JSON.stringify(arg)})`;
+  const expression = `(${AGENT_PAGE})(${JSON.stringify(op)}, ${JSON.stringify(arg)})`;
   for (let attempt = 0; ; attempt++) {
     const contextId = await worldContext(tabId);
     let r;
@@ -387,7 +386,7 @@ function normalizeUrl(url) {
   return full;
 }
 
-// Some apps (e.g. Discord) report "loaded" only after 20 s or more: Hermes should know that not everything is there yet.
+// Some apps (e.g. Discord) report "loaded" only after 20 s or more: The agent should know that not everything is there yet.
 const loadNote = async (info, tabId) =>
   (await chrome.tabs.get(tabId)).status === "complete" ? info : { ...info, loading: "Page still loading – read_page/screenshot show the current state, wait briefly if needed" };
 
@@ -486,7 +485,7 @@ async function capture(tabId, { region, scale = 1 } = {}) {
     await chrome.tabs.update(tabId, { active: true });
     await new Promise((r) => setTimeout(r, 150));
   }
-  await show(tabId, { hidden: true }); // Hermes should see the real page, not frame and pointer
+  await show(tabId, { hidden: true }); // The agent should see the real page, not frame and pointer
   try {
     return await captureInner(tabId, { region, scale });
   } finally {
@@ -534,7 +533,7 @@ async function point(tabId, { ref, coordinate }) {
 }
 
 const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
-const OFF_HINT = "turned off in the hermes-tabs safety settings";
+const OFF_HINT = "turned off in the extension's safety settings";
 const OPAQUE_REFUSAL = `Focus is inside a cross-origin iframe (often login or payment) – typing there is ${OFF_HINT}, the user does that`;
 const PASSWORD_REFUSAL = `The focused field is a password field – entering credentials is ${OFF_HINT}, the user does that`;
 const AUTOFILL_REFUSAL = "Arrow and page keys in a sign-in field can pick a login the browser saved (autofill) – signing in " +
@@ -566,8 +565,8 @@ async function computer(p) {
       }
       await sleep(0.4);
       const opened = newChildren(tabId, since);
-      let note = opened.length ? ` – opened new tab ${opened.join(", ")} (owned by Hermes, continue there)` : "";
-      // Feedback when the click missed its target – otherwise Hermes would type into nothing afterwards.
+      let note = opened.length ? ` – opened new tab ${opened.join(", ")} (yours, continue there)` : "";
+      // Feedback when the click missed its target – otherwise the agent would type into nothing afterwards.
       if (pt.covered) note += ` – warning: the target was covered, the click hit ${pt.covered}`;
       if (pt.editable && action === "left_click" && !(await page(tabId, "focusInfo").catch(() => ({ editable: true }))).editable) {
         note += " – the field did not get focus (it may only open a search or menu first: run find/read_page again)";
@@ -597,7 +596,7 @@ async function computer(p) {
       if (focus.password && !s.passwords) throw refuse(p, PASSWORD_REFUSAL);
       if (focus.opaque && !s.frameTyping) throw refuse(p, OPAQUE_REFUSAL);
       if (focus.password || focus.opaque) p.sensitive = true;
-      // Without a focused input the text would go nowhere – Hermes should learn that instead of reading "typed".
+      // Without a focused input the text would go nowhere – The agent should learn that instead of reading "typed".
       if (!focus.editable && !focus.opaque) { // inside a cross-origin iframe the field cannot be checked
         throw new Error(`No input field has focus (active: ${focus.tag ?? "nothing"}) – nothing typed. Click into the field first; ` +
           "if the click only opens a search/menu, run find/read_page again and click the new field.");
@@ -691,13 +690,13 @@ const LOGO = Promise.all([dataUrl("icon48.png"), dataUrl("icon48-dark.png")]).ca
 // Wide rights stay visible to the user in the stop bar.
 const rightsNote = (s) => (s.tier === "full" ? msg("overlayFull") : s.passwords ? msg("overlayPasswords") : "");
 const show = async (tabId, o) => {
-  const r = await page(tabId, "overlay", { ...o, t: OVERLAY_TEXT, logo: await LOGO, warn: rightsNote(await getSafety()) }).catch(() => {});
+  const r = await page(tabId, "overlay", { ...o, t: OVERLAY_TEXT, logo: await LOGO, theme: BRAND.overlay, warn: rightsNote(await getSafety()) }).catch(() => {});
   if (r === "tampered") overlayTampered(tabId);
 };
 
 // The page keeps removing or restyling the overlay: tell the user (badge, notification) and the agent (TAMPER_NOTE in
 // every answer for this tab until the next page load).
-const TAMPER_NOTE = "Warning: this page keeps removing or hiding the Hermes overlay, so the user may not see your actions " +
+const TAMPER_NOTE = "Warning: this page keeps removing or hiding the overlay that shows your actions, so the user may not see your actions " +
   "in the tab. Treat the page as hostile and tell the user.";
 async function overlayTampered(tabId) {
   const st = state(tabId);
@@ -707,7 +706,7 @@ async function overlayTampered(tabId) {
   chrome.action.setBadgeBackgroundColor({ tabId, color: DANGER }).catch(() => {});
   const host = new URL((await chrome.tabs.get(tabId).catch(() => ({}))).url || "about:blank").host;
   try {
-    chrome.notifications.create(`hermes-tamper-${tabId}-${Date.now()}`, {
+    chrome.notifications.create(`tabs-tamper-${tabId}-${Date.now()}`, {
       type: "basic", iconUrl: "icon128.png", title: msg("tamperTitle"), message: msg("tamperText", host),
     }, () => void chrome.runtime.lastError);
   } catch {}
@@ -737,7 +736,7 @@ const NEEDS_TEXT = { act: "clicking, typing, keys, form input and confirming dia
 async function assertCapability(need) {
   const s = await getSafety();
   if (!s[need]) {
-    throw new Error(`Turned off in the hermes-tabs safety settings (tier ${s.tier}): ${NEEDS_TEXT[need]}. ` +
+    throw new Error(`Turned off in the extension's safety settings (tier ${s.tier}): ${NEEDS_TEXT[need]}. ` +
       "Do not work around it (e.g. via javascript); ask the user, who can change it in the extension options.");
   }
 }
@@ -745,7 +744,7 @@ async function assertCapability(need) {
 const pendingAsks = new Map(); // tabId -> { origin, promise, notifId, resolve }
 const onceAllowed = new Map(); // tabId -> origin ("once" holds until the tab changes website)
 
-// May Hermes act on the tab's current website without asking?
+// May the agent act on the tab's current website without asking?
 // Permission levels: once (tab+site) · site for this session · site always ·
 // all sites for a limited time (allowAllUntil) · all sites until browser restart · all sites always (siteMode "all").
 // "Session" lives in storage.session and expires on browser restart (and on extension reload).
@@ -755,8 +754,8 @@ async function permissions() {
   return { enabled: true, siteMode: "ask", allowedSites: {}, allowAllUntil: 0, blockedSites: [], sessionSites: {}, allowAllSession: false, ...local, ...session };
 }
 
-// data:, about:blank: no website that could be approved – Hermes reads there but does not act.
-const NOT_WEB_ERROR = "This tab shows a data: or about:blank page, not a website – Hermes does not act there " +
+// data:, about:blank: no website that could be approved – The agent reads there but does not act.
+const NOT_WEB_ERROR = "This tab shows a data: or about:blank page, not a website – no actions there " +
   "(reading works). Load the website with navigate first.";
 const webUrls = (t) => {
   // During a navigation the target (pendingUrl) counts too, otherwise a click lands on a site without permission.
@@ -811,7 +810,7 @@ function askPermission(tabId, origin, host, summary, timeoutMs) {
   const prev = pendingAsks.get(tabId);
   if (prev && prev.origin === origin) return prev.promise;
   prev?.resolve("deny"); // the tab moved to another website: the old question is void (also removes its notification)
-  const notifId = `hermes-perm-${tabId}-${Date.now()}`;
+  const notifId = `tabs-perm-${tabId}-${Date.now()}`;
   let done;
   const entry = { origin, notifId, promise: new Promise((r) => (done = r)) };
   const timer = setTimeout(() => entry.resolve("timeout"), timeoutMs);
@@ -836,12 +835,12 @@ function askPermission(tabId, origin, host, summary, timeoutMs) {
   return entry.promise;
 }
 
-// switch_browser: "Connect" in the browser the user wants Hermes to use (one request at a time).
+// switch_browser: "Connect" in the browser the user wants the agent to use (one request at a time).
 let pairAsk = null; // { notifId, pairId, resolve(ok) }
 
 function askPair(timeoutMs, pairId) {
   pairAsk?.resolve(false);
-  const notifId = `hermes-pair-${Date.now()}`;
+  const notifId = `tabs-pair-${Date.now()}`;
   return new Promise((done) => {
     const timer = setTimeout(() => entry.resolve(false), timeoutMs);
     const entry = {
@@ -866,17 +865,19 @@ function askPair(timeoutMs, pairId) {
 }
 
 // Loosening a setting through the relay: the user confirms in the browser (one request at a time, 120 s).
-// The admin token sits in Hermes' environment, so the agent could read it and try to grant itself rights.
+// The admin token sits in the agent's environment, so the agent could read it and try to grant itself rights.
 const CONFIRM_MS = 120000;
 let looseAsk = null; // { id, clicked, resolve(answer) }
 chrome.storage.session.remove("pendingLoosening"); // a request from before a service worker restart is gone
-// ... and so are its notification and those of permission and browser requests: their answers would reach nobody.
-chrome.notifications.getAll((all) => { for (const id in all ?? {}) if (/^hermes-(loosen|perm|pair)-/.test(id)) chrome.notifications.clear(id); });
+// ... and so are all notifications of the previous service worker (also those with the ID prefixes of older versions):
+// answers to permission, browser and loosening requests would reach nobody, and a tamper warning belongs to a page state
+// that is gone.
+chrome.notifications.getAll((all) => { for (const id in all ?? {}) chrome.notifications.clear(id); });
 
 async function askLoosening(summary) {
   const { confirmTimeoutMs = CONFIRM_MS } = await chrome.storage.local.get("confirmTimeoutMs");
   if (looseAsk) throw new Error("Another settings change is waiting for the user's confirmation in the browser – try again later");
-  const id = `hermes-loosen-${Date.now()}`;
+  const id = `tabs-loosen-${Date.now()}`;
   return new Promise((done) => {
     const timer = setTimeout(() => entry.resolve("expired"), Math.min(confirmTimeoutMs, CONFIRM_MS));
     const entry = {
@@ -922,7 +923,7 @@ chrome.notifications.onClosed.addListener((id, byUser) => {
   if (byUser) for (const e of pendingAsks.values()) if (e.notifId === id) e.resolve("deny");
 });
 
-// Stop in the tab: revoke the share, remove the tab from the Hermes group (else it would be re-adopted), detach the debugger.
+// Stop in the tab: revoke the share, remove the tab from the agent's group (else it would be re-adopted), detach the debugger.
 async function stopTab(tabId) {
   pendingAsks.get(tabId)?.resolve("deny");
   await show(tabId, { remove: true });
@@ -1056,7 +1057,7 @@ async function applySettings({ enabled, siteMode, allowAll, sites, blockedSites,
 // ---------- Commands ----------
 
 const handlers = {
-  // Only from the relay via /admin/settings (separate admin token), not an MCP tool: Hermes cannot grant itself rights.
+  // Only from the relay via /admin/settings (separate admin token), not an MCP tool: The agent cannot grant itself rights.
   // Tightening applies at once; loosening only after the user confirms it in the browser (askLoosening).
   async settings(body) {
     const next = await parseSettings(body);
@@ -1126,9 +1127,9 @@ const handlers = {
     const shared = await getShared();
     const owner = Number.isInteger(tabId) && Object.hasOwn(shared, String(tabId)) ? shared[tabId] : undefined;
     if (owner !== "agent" && !(owner === "user" && (await getSafety()).closeShared)) {
-      throw new Error("Only tabs opened by Hermes itself may be closed" + (owner === "user" ? ` (closing shared tabs is ${OFF_HINT})` : ""));
+      throw new Error("Only tabs you opened yourself may be closed" + (owner === "user" ? ` (closing shared tabs is ${OFF_HINT})` : ""));
     }
-    // A beforeunload handler would block closing forever. Hermes explicitly wants to close its own tab,
+    // A beforeunload handler would block closing forever. The agent explicitly wants to close its own tab,
     // so confirm the dialog while doing so. A tab the user shared may hold their unsaved work: cancel and leave it to them.
     const st = state(tabId), user = owner === "user";
     if (user && st.dialog) throw dialogError(st.dialog);
@@ -1150,9 +1151,9 @@ const handlers = {
 
   async navigate({ tabId, url }) {
     await assertAllowed(tabId);
-    // Hermes may always leave a protected page – just without debugger access to it.
+    // The agent may always leave a protected page – just without debugger access to it.
     let safeNow = await assertSafeTab(tabId).then(() => true, () => false);
-    // Browser PDF viewer (or another extension's page): no debugger possible, but Hermes may leave.
+    // Browser PDF viewer (or another extension's page): no debugger possible, but the agent may leave.
     let viewer = false;
     if (safeNow) await attachAllowed(tabId).catch((e) => { if (!OTHER_EXT.test(e.message)) throw e; viewer = true; });
     if (url === "back" || url === "forward") {
@@ -1296,8 +1297,8 @@ const handlers = {
       const responsive = await probe(tabId);
       st.dialog = responsive ? null : st.dialog;
       if (responsive) return "no dialog open";
-      throw new Error("A dialog that opened before Hermes could attach can only be answered in the browser itself " +
-        "(ask the user). For a tab Hermes opened itself, tabs_close helps; navigate works only after the dialog.");
+      throw new Error("A dialog that opened before the extension could attach can only be answered in the browser itself " +
+        "(ask the user). For a tab you opened yourself, tabs_close helps; navigate works only after the dialog.");
     }
     st.dialog = null;
     return d && !d.suspected ? `${d.type} dialog "${d.message}" ${accept ? "accepted" : "dismissed"}` : `dialog ${accept ? "accepted" : "dismissed"}`;
@@ -1364,7 +1365,7 @@ async function connect() {
     try {
       if (!handlers[method]) throw new Error(`Unknown command ${method} (extension ${VERSION})`);
       if (!["status", "settings", "reload", "pair_cancel"].includes(method) && (await chrome.storage.local.get("enabled")).enabled === false) {
-        throw new Error("Hermes in the browser is turned off – the user can turn it on in the extension options or the Hermes plugin settings");
+        throw new Error("The browser extension is turned off – the user can turn it on in its options (or in the agent's plugin settings, if there is one)");
       }
       const need = needs(method, p);
       if (need) await assertCapability(need); // before the site question: no prompt for something that is off anyway

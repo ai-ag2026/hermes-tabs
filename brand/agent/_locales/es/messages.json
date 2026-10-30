@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "Comparte pestañas concretas con tu agente de IA; la conexión pasa por tu propio relay."
+  },
+  "actionTitle": {
+    "message": "Agent Tabs: compartir / dejar de compartir esta pestaña"
+  },
+  "overlayBar": {
+    "message": "El agente está controlando esta pestaña"
+  },
+  "askText": {
+    "message": "El agente quiere actuar en $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "El agente dice: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "El agente solicita permiso"
+  },
+  "optBrowserHeading": {
+    "message": "El agente en el navegador"
+  },
+  "optEnabled": {
+    "message": "Activado (desactivado: el agente no puede hacer nada en el navegador)"
+  },
+  "optActionsHelp": {
+    "message": "El agente puede leer en cualquier parte de sus pestañas. Hacer clic, escribir y rellenar formularios, solo con permiso."
+  },
+  "optBlockedHelp": {
+    "message": "Aquí el agente no puede hacer nada, ni siquiera leer (subdominios incluidos)."
+  },
+  "pairTitle": {
+    "message": "El agente quiere usar un navegador"
+  },
+  "pairText": {
+    "message": "¿Usar este navegador para el agente? Haz clic en Conectar en el navegador en el que debe trabajar el agente."
+  },
+  "optBrowserNameHelp": {
+    "message": "El agente lo ve cuando hay varios navegadores conectados al relay (p. ej., Escritorio, Portátil)."
+  },
+  "optTokenHelp": {
+    "message": "Token de acceso del relay (AGENT_TABS_TOKEN)."
+  },
+  "looseTitle": {
+    "message": "¿Permitir más al agente?"
+  },
+  "looseText": {
+    "message": "Un cambio de la configuración quiere permitir: $LIST$. Confirma solo si lo hiciste tú (p. ej. en la configuración de tu agente).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "Activar el agente en el navegador"
+  },
+  "optSafetyHelp": {
+    "message": "Cuánto puede hacer el agente en sus pestañas. Cambiar un solo interruptor crea una configuración propia."
+  },
+  "safety_passwords_desc": {
+    "message": "Escribir en campos de contraseña. El agente podrá introducir credenciales que estén en el chat o en su contexto."
+  },
+  "warnLoosen": {
+    "message": "El agente obtiene más derechos: $LIST$. ¿Continuar?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Atención: el agente podrá introducir credenciales que estén en el chat o en su contexto, por ejemplo contraseñas que le diste o que leyó en algún sitio. Actívalo solo si el agente debe iniciar sesión por ti."
+  },
+  "tamperTitle": {
+    "message": "La página oculta la superposición del agente"
+  },
+  "tamperText": {
+    "message": "$HOST$ elimina una y otra vez la superposición del agente, así que quizá no veas lo que el agente hace en la pestaña. Si dudas, deténlo con el icono de la barra de herramientas.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

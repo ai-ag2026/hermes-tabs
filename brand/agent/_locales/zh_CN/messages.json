@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "将单个标签页共享给你的 AI 智能体；连接通过你自己的中继进行。"
+  },
+  "actionTitle": {
+    "message": "Agent Tabs：共享 / 取消共享此标签页"
+  },
+  "overlayBar": {
+    "message": "智能体正在控制此标签页"
+  },
+  "askText": {
+    "message": "智能体想在 $HOST$ 上执行操作",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "智能体说：$TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "智能体请求授权"
+  },
+  "optBrowserHeading": {
+    "message": "浏览器中的智能体"
+  },
+  "optEnabled": {
+    "message": "启用（关闭后，智能体在浏览器中无法执行任何操作）"
+  },
+  "optActionsHelp": {
+    "message": "智能体可以在其标签页中随处读取。点击、输入和填写表单需经授权。"
+  },
+  "optBlockedHelp": {
+    "message": "智能体在这些网站上不能执行任何操作，包括读取（含子域名）。"
+  },
+  "pairTitle": {
+    "message": "智能体想使用一个浏览器"
+  },
+  "pairText": {
+    "message": "将此浏览器用于智能体？请在希望智能体工作的浏览器中点击“连接”。"
+  },
+  "optBrowserNameHelp": {
+    "message": "当多个浏览器连接到中继时，智能体会看到此名称（例如：台式机、笔记本）。"
+  },
+  "optTokenHelp": {
+    "message": "中继的访问令牌（AGENT_TABS_TOKEN）。"
+  },
+  "looseTitle": {
+    "message": "允许智能体做更多？"
+  },
+  "looseText": {
+    "message": "一项设置更改想要允许：$LIST$。仅当这是你自己做的更改（例如在你的智能体设置中）时才确认。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "在浏览器中启用智能体"
+  },
+  "optSafetyHelp": {
+    "message": "智能体在其标签页中可以做什么。单独更改某个开关即为自定义设置。"
+  },
+  "safety_passwords_desc": {
+    "message": "在密码字段中输入。智能体将能够输入聊天或其上下文中的登录凭据。"
+  },
+  "warnLoosen": {
+    "message": "智能体将获得更多权限：$LIST$。是否继续？",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意：智能体将能够输入聊天或其上下文中的登录凭据，例如你告诉它的密码或它在某处读到的密码。仅当你希望智能体替你登录时才启用此项。"
+  },
+  "tamperTitle": {
+    "message": "页面正在隐藏智能体的提示层"
+  },
+  "tamperText": {
+    "message": "$HOST$ 不断移除智能体的提示层，你可能看不到智能体在标签页中的操作。如有疑虑，请通过工具栏图标停止。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

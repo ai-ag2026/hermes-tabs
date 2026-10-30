@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "將個別分頁分享給你的智慧代理；連線透過你自己的中繼伺服器進行。"
+  },
+  "actionTitle": {
+    "message": "Agent Tabs：分享 / 取消分享此分頁"
+  },
+  "overlayBar": {
+    "message": "智慧代理正在控制此分頁"
+  },
+  "askText": {
+    "message": "智慧代理想在 $HOST$ 上執行操作",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "智慧代理說：$TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "智慧代理請求授權"
+  },
+  "optBrowserHeading": {
+    "message": "瀏覽器中的智慧代理"
+  },
+  "optEnabled": {
+    "message": "啟用（關閉後，智慧代理無法在瀏覽器中執行任何操作）"
+  },
+  "optActionsHelp": {
+    "message": "智慧代理可在其分頁中隨處讀取。點擊、輸入和填寫表單須經授權。"
+  },
+  "optBlockedHelp": {
+    "message": "智慧代理在這些網站上不能執行任何操作，包括讀取（含子網域）。"
+  },
+  "pairTitle": {
+    "message": "智慧代理想使用一個瀏覽器"
+  },
+  "pairText": {
+    "message": "要將此瀏覽器用於智慧代理嗎？請在希望智慧代理工作的瀏覽器中點擊「連線」。"
+  },
+  "optBrowserNameHelp": {
+    "message": "當多個瀏覽器連線到中繼伺服器時，智慧代理會看到此名稱（例如：桌機、筆電）。"
+  },
+  "optTokenHelp": {
+    "message": "中繼伺服器的存取權杖（AGENT_TABS_TOKEN）。"
+  },
+  "looseTitle": {
+    "message": "允許智慧代理做更多？"
+  },
+  "looseText": {
+    "message": "一項設定變更想要允許：$LIST$。僅當這是你自己做的變更（例如在你的智慧代理設定中）時才確認。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "在瀏覽器中啟用智慧代理"
+  },
+  "optSafetyHelp": {
+    "message": "智慧代理在其分頁中可以做什麼。單獨變更某個開關即為自訂設定。"
+  },
+  "safety_passwords_desc": {
+    "message": "在密碼欄位中輸入。智慧代理將能夠輸入聊天或其內容脈絡中的登入憑證。"
+  },
+  "warnLoosen": {
+    "message": "智慧代理將獲得更多權限：$LIST$。是否繼續？",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意：智慧代理將能夠輸入聊天或其內容脈絡中的登入憑證，例如你告訴它的密碼或它在某處讀到的密碼。僅當你希望智慧代理替你登入時才啟用此項。"
+  },
+  "tamperTitle": {
+    "message": "頁面正在隱藏智慧代理的提示層"
+  },
+  "tamperText": {
+    "message": "$HOST$ 不斷移除智慧代理的提示層，你可能看不到智慧代理在分頁中的操作。如有疑慮，請透過工具列圖示停止。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

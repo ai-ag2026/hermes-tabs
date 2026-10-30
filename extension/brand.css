@@ -1,0 +1,16 @@
+/* Colours of the options page. build.py replaces this file for other packages. */
+/* Hermes desktop default theme ("nous"), light and dark, resolved to fixed values. */
+:root {
+  --bg: #f8f9fe; --surface: #fdfdfd; --text: #242528; --text-2: #515255; --text-3: #7e7f83;
+  --stroke: #d5dff4; --stroke-strong: #c3d1f0; --accent: #0053fd; --on-accent: #fff;
+  --ctl: #e8edf6; --ctl-hover: #d9e2f3; --row-hover: #f1f4fb;
+  --danger: #cf2d56; --radius: 3px; --radius-card: 5px;
+  font: 13px/1.45 "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1015; --surface: #16181c; --text: #d9e0e6; --text-2: #aeb4b9; --text-3: #82878d;
+    --stroke: #252c3c; --stroke-strong: #2b364d; --accent: #4a84fe; --on-accent: #161616;
+    --ctl: #242a38; --ctl-hover: #303b52; --row-hover: #1e222b; --danger: #f0587e;
+  }
+}

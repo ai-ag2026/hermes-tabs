@@ -1,8 +1,9 @@
 """Takes the README screenshots with the real extension in headless Chromium (needs internet for Wikipedia).
 
-    uv run python docs/screenshots.py
+    uv run python docs/screenshots.py                          # hermes-tabs (extension/)
+    SHOTS_PKG=agent uv run python docs/screenshots.py          # agent-tabs (run build.py first)
 
-Writes docs/options-<lang>.png and docs/consent-<lang>.png for en and de; docs/plugin-en.png is a manual screenshot of
+Writes docs/options-<lang>.png and docs/consent-<lang>.png for en and de (agent-tabs: docs/agent-*.png); docs/plugin-en.png is a manual screenshot of
 the Hermes settings page. The consent picture is staged: the overlay is shown through the extension's own functions on
 a Wikipedia article, no click is sent.
 """
@@ -20,7 +21,9 @@ from pathlib import Path
 import websockets
 
 HERE = Path(__file__).parent
-EXT = HERE.parent / "extension"
+PKG = os.environ.get("SHOTS_PKG", "hermes")
+EXT = HERE.parent / ("extension" if PKG == "hermes" else f"dist/{PKG}-tabs")
+PREFIX = "" if PKG == "hermes" else f"{PKG}-"
 PORT = int(os.environ.get("SHOTS_CDP_PORT", 9381))
 ARTICLE = {"en": "https://en.wikipedia.org/wiki/Hermes?banner=none", "de": "https://de.wikipedia.org/wiki/Hermes?banner=none"}
 ASK = {"en": "Open the section “Etymology”", "de": "Abschnitt „Etymologie“ öffnen"}
@@ -75,14 +78,14 @@ async def take(lang):
                       "allowedSites: {'https://github.com': true}, blockedSites: ['bank.example']})"
                       ".then(() => chrome.tabs.create({url: chrome.runtime.getURL('options.html')})).then(() => 1)")
         await asyncio.sleep(1.5)
-        await shoot("options.html", HERE / f"options-{lang}.png", full=True)
+        await shoot("options.html", HERE / f"{PREFIX}options-{lang}.png", full=True)
         summary = json.dumps(ASK[lang])
         print(await sw_eval(f"chrome.tabs.create({{url: {json.dumps(ARTICLE[lang])}}}).then(async (t) => {{"
                             " await new Promise((r) => setTimeout(r, 4000)); await setShared(t.id, 'user');"
-                            " await page(t.id, 'overlay', {active: true, x: 330, y: 300, label: ACTION_LABELS.left_click, t: OVERLAY_TEXT, logo: await LOGO});"
+                            " await page(t.id, 'overlay', {active: true, x: 330, y: 300, label: ACTION_LABELS.left_click, t: OVERLAY_TEXT, logo: await LOGO, theme: BRAND.overlay});"
                             f" await show(t.id, {{ask: msg('askText', new URL(t.pendingUrl || t.url).host), say: msg('askSays', {summary})}}); return t.id; }}).catch(String)"))
         await asyncio.sleep(1)
-        await shoot("wikipedia.org", HERE / f"consent-{lang}.png")
+        await shoot("wikipedia.org", HERE / f"{PREFIX}consent-{lang}.png")
     finally:
         proc.terminate()
         proc.wait(10)

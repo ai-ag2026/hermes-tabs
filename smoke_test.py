@@ -31,6 +31,10 @@ from PIL import Image as PILImage
 from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
 HERE = Path(__file__).parent
+# Which package to test: extension/ (hermes-tabs, default) or a build, e.g. SMOKE_EXT=dist/agent-tabs. The agent-tabs
+# run also configures the relay with the AGENT_TABS_* spelling of its variables.
+EXT = (HERE / os.environ.get("SMOKE_EXT", "extension")).resolve()
+ENV = "AGENT_TABS" if EXT.name.startswith("agent") else "HERMES_TABS"
 TOKEN = secrets.token_urlsafe(24)
 ADMIN = secrets.token_urlsafe(16)
 # Ports can be changed via environment so several test runs can run in parallel
@@ -194,7 +198,7 @@ async def user_click(url_part, selector=None, shot=None):
             Path(shot).write_bytes(base64.b64decode((await send("Page.captureScreenshot"))["data"]))
             return
         doc = await send("DOM.getDocument", depth=-1, pierce=True)
-        host = (await send("DOM.querySelector", nodeId=doc["root"]["nodeId"], selector="hermes-tabs-overlay"))["nodeId"]
+        host = (await send("DOM.querySelector", nodeId=doc["root"]["nodeId"], selector="agent-tabs-overlay"))["nodeId"]
         assert host, "no overlay"
         desc = await send("DOM.describeNode", nodeId=host, depth=1, pierce=True)
         shadow = desc["node"]["shadowRoots"][0]["backendNodeId"]
@@ -253,7 +257,7 @@ async def permissions(t: T, base: str):
     await asyncio.sleep(1)
     assert (await js("window.late")).startswith("blocked")
     assert (await js("await fetch('/two.html').then(r => r.status)")).startswith("200")
-    assert await js("typeof __hermesTabs") == "undefined"  # the page cannot fake a permission answer
+    assert await js("typeof __agentTabs") == "undefined"  # the page cannot fake a permission answer
     out = await js("const w = window.open('/two.html'); await new Promise(r => setTimeout(r, 800)); "
                    "w ? await w.fetch('/two.html', {method: 'POST'}).then(r => 'passed', () => 'blocked') : 'no window'")
     assert out.startswith("no window"), "popup bypasses write guard: " + out
@@ -288,9 +292,9 @@ async def permissions(t: T, base: str):
         await asyncio.sleep(7)  # after 6 s idle everything must be gone
         await user_click("two.html?p1", shot=Path(os.environ["SMOKE_SHOTS"]) / "overlay-idle.png")
     # Overlay is visible, but not in the screenshot
-    assert await js("!!document.querySelector('hermes-tabs-overlay')") == "true"
+    assert await js("!!document.querySelector('agent-tabs-overlay')") == "true"
     await t("computer", tabId=tid, action="screenshot")
-    assert await js("document.querySelector('hermes-tabs-overlay').style.visibility") == "visible"
+    assert await js("document.querySelector('agent-tabs-overlay').style.visibility") == "visible"
 
     # No passwords: neither form_input nor typing
     pw = ref(await t("find", tabId=tid, query="password"), "password|textbox")
@@ -331,7 +335,7 @@ async def permissions(t: T, base: str):
     await asyncio.sleep(0.5)
     assert tid not in {x["tabId"] for x in json.loads(await t("tabs_context"))}
     r = await t.raw("read_page", tabId=tid)
-    assert r.is_error and "not shared with Hermes" in r.content[0].text, r.content[0].text
+    assert r.is_error and "not shared with you" in r.content[0].text, r.content[0].text
     await sw_eval(f"chrome.tabs.remove({tid}).then(() => 1)")
 
     # "Always": stored, no further prompt, visible and revocable in the options
@@ -537,7 +541,7 @@ async def admin_safety():
 
 def check_locales():
     """Every _locales/*/messages.json has the keys of en and the same placeholders."""
-    loc = HERE / "extension" / "_locales"
+    loc = EXT / "_locales"
     en = json.loads((loc / "en" / "messages.json").read_text())
     marks = lambda m: (sorted(re.findall(r"\$\w+\$", m["message"])), m.get("placeholders"))
     for f in sorted(loc.glob("*/messages.json")):
@@ -615,7 +619,7 @@ async def scenario(t: T, tmp: Path):
     await js("orig.before(orig.cloneNode(true)); 1")
     await t("computer", tabId=tid, action="left_click", ref=ref(page, r'button "Original"'))
     # The page replaces the reference table (invisible to it): the click still hits the original
-    await js("window.__hermesRefs = { get: () => ({ deref: () => document.getElementById('conf') }), set() {} }; window.__hermesRef = 0; 1")
+    await js("window.__agentTabsRefs = { get: () => ({ deref: () => document.getElementById('conf') }), set() {} }; window.__agentTabsRef = 0; 1")
     await t("computer", tabId=tid, action="left_click", ref=ref(page, r'button "Original"'))
     # Disabled fields, read-only fields and disabled options cannot be set
     for pat, val, want in ((r'textbox "Fixed"', "x", "read-only"), (r'textbox "Locked"', "x", "disabled"),
@@ -716,10 +720,10 @@ async def scenario(t: T, tmp: Path):
     await t("computer", tabId=tid, action="wait", duration=0.2)
 
     # A page that keeps removing the overlay: put back, then reported to the agent (no endless fight)
-    await js("window.rm = setInterval(() => document.querySelector('hermes-tabs-overlay')?.remove(), 5); 1")
+    await js("window.rm = setInterval(() => document.querySelector('agent-tabs-overlay')?.remove(), 5); 1")
     await asyncio.sleep(1.5)
     out = await t("find", tabId=tid, query="Greet")
-    assert "removing or hiding the Hermes overlay" in out, out
+    assert "removing or hiding the overlay" in out, out
     await js("clearInterval(rm); 1")
 
     # data: and about:blank are no website: reading yes, acting no (even with all sites allowed), scripts read-only
@@ -883,10 +887,10 @@ async def scenario(t: T, tmp: Path):
     assert ctx.get(utid) == "user", ctx
     assert "two" in await t("get_page_text", tabId=utid)
     r = await t.raw("tabs_close", tabId=utid)
-    assert r.is_error and "opened by Hermes itself" in r.content[0].text, r.content[0].text
+    assert r.is_error and "you opened yourself" in r.content[0].text, r.content[0].text
     await sw_eval(f"setShared({utid}, null).then(() => 1)")
     r = await t.raw("get_page_text", tabId=utid)
-    assert r.is_error and "not shared with Hermes" in r.content[0].text, r.content[0].text
+    assert r.is_error and "not shared with you" in r.content[0].text, r.content[0].text
     # a user-shared tab on a local file stays locked
     ftid = await sw_eval("chrome.tabs.create({url: 'file:///etc/hostname', active: false})"
                          ".then(async (t) => { await setShared(t.id, 'user'); return t.id; }, () => null)")
@@ -912,7 +916,7 @@ async def scenario(t: T, tmp: Path):
 
     # Limits and cleanup
     denied = await t.raw("read_page", tabId=tid + 1000)
-    assert denied.is_error and "not shared with Hermes" in denied.content[0].text
+    assert denied.is_error and "not shared with you" in denied.content[0].text
     await t("tabs_close", tabId=tid)
     assert json.loads(await t("tabs_context")) == []
     created = json.loads((await t("navigate", url=f"{base}/two.html")).split("\n\nTabs:")[0])
@@ -925,7 +929,8 @@ async def run(scale: int):
     (tmp / "index.html").write_text(PAGE)
     (tmp / "two.html").write_text(PAGE2)
     PILImage.new("RGB", (60, 40), "white").save(tmp / "doc.pdf")
-    env = {**os.environ, "HERMES_TABS_TOKEN": TOKEN, "HERMES_TABS_ADMIN_TOKEN": ADMIN, "HERMES_TABS_PORT": str(RELAY_PORT), "HERMES_TABS_GIF_DIR": str(tmp)}
+    env = {**{k: v for k, v in os.environ.items() if not k.startswith(("HERMES_TABS_", "AGENT_TABS_"))},
+           f"{ENV}_TOKEN": TOKEN, f"{ENV}_ADMIN_TOKEN": ADMIN, f"{ENV}_PORT": str(RELAY_PORT), f"{ENV}_GIF_DIR": str(tmp)}
     procs = [
         subprocess.Popen([sys.executable, HERE / "relay.py"], env=env, stdout=(tmp / "relay.log").open("w")),  # audit log
         subprocess.Popen([sys.executable, "-m", "http.server", str(PAGE_PORT), "-b", "127.0.0.1", "-d", tmp],
@@ -933,7 +938,7 @@ async def run(scale: int):
         subprocess.Popen([
             shutil.which("chromium") or "google-chrome", "--headless=new", "--no-first-run",
             f"--user-data-dir={tmp / 'profile'}", f"--remote-debugging-port={CDP_PORT}",
-            f"--load-extension={HERE / 'extension'}", f"--disable-extensions-except={HERE / 'extension'}",
+            f"--load-extension={EXT}", f"--disable-extensions-except={EXT}",
             "--disable-features=DisableLoadExtensionCommandLineSwitch", f"--force-device-scale-factor={scale}",
             "--window-size=1280,900", "about:blank",
         ], stderr=subprocess.DEVNULL),

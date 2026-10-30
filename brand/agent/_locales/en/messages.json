@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "Shares individual tabs with your AI agent; the connection runs through your own relay."
+  },
+  "actionTitle": {
+    "message": "Agent Tabs: share / revoke this tab"
+  },
+  "overlayBar": {
+    "message": "The agent is controlling this tab"
+  },
+  "askText": {
+    "message": "The agent wants to act on $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "The agent says: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "The agent requests permission"
+  },
+  "optBrowserHeading": {
+    "message": "The agent in the browser"
+  },
+  "optEnabled": {
+    "message": "Enabled (off: the agent cannot do anything in the browser)"
+  },
+  "optActionsHelp": {
+    "message": "The agent may read anywhere in its tabs. Clicking, typing and forms only with permission."
+  },
+  "optBlockedHelp": {
+    "message": "The agent may do nothing here, not even read (subdomains included)."
+  },
+  "pairTitle": {
+    "message": "The agent wants to use a browser"
+  },
+  "pairText": {
+    "message": "Use this browser for the agent? Click Connect in the browser the agent should work in."
+  },
+  "optBrowserNameHelp": {
+    "message": "Shown to the agent when several browsers are connected to the relay (e.g. Desktop, Laptop)."
+  },
+  "optTokenHelp": {
+    "message": "Access token of the relay (AGENT_TABS_TOKEN)."
+  },
+  "looseTitle": {
+    "message": "Allow the agent more?"
+  },
+  "looseText": {
+    "message": "A settings change wants to allow: $LIST$. Confirm only if you made this change yourself (e.g. in your agent's settings).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "Turn on the agent in the browser"
+  },
+  "optSafetyHelp": {
+    "message": "How much the agent may do in its tabs. Changing a single switch makes it a custom setting."
+  },
+  "safety_passwords_desc": {
+    "message": "Typing into password fields. The agent can then enter credentials that are in the chat or its context."
+  },
+  "warnLoosen": {
+    "message": "The agent gets more rights: $LIST$. Continue?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Caution: the agent can then enter credentials that are in the chat or its context – for example passwords you told it or that it read somewhere. Turn this on only if the agent should sign in for you."
+  },
+  "tamperTitle": {
+    "message": "The page is hiding the agent overlay"
+  },
+  "tamperText": {
+    "message": "$HOST$ keeps removing the agent overlay, so you may not see what the agent does in the tab. If in doubt, stop it with the toolbar icon.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

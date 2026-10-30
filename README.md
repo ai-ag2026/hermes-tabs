@@ -8,6 +8,10 @@ hermes-tabs is a Chromium extension (Manifest V3, built on `chrome.debugger`), a
 
 It is for people who want an agent to use sites that have no API or sit behind a login, without handing the agent a separate browser profile or their credentials (typing into password fields is off by default), and who want to see and stop what it does.
 
+**Two packages from one source.** `build.py` builds the extension twice: **Hermes Tabs** (Hermes look and logo, the tab group is called "Hermes", goes with the optional [Hermes plugin](#hermes-plugin)) and **Agent Tabs** (neutral look with its own icon, the tab group is called "Agent", no mention of Hermes) for any other agent or MCP client, such as Claude Code, Codex, Cursor or OpenCode. Code, tools, safeguards and relay are the same; only the name, colours, icons and the texts that name the agent differ. Both can be installed side by side. Ready-made zips of both are attached to each [release](https://github.com/ai-ag2026/hermes-tabs/releases).
+
+<img src="docs/agent-consent-en.png" alt="Agent Tabs asking for permission on a Wikipedia article" width="560">
+
 **Familiar tool set.** The tools are modelled on the browser tools of Anthropic's *Claude in Chrome* extension: largely the same names (without the `_mcp` suffix), the same parameters and the same `ref_N` workflow, so prompts and habits carry over. hermes-tabs is an independent implementation built from the published tool descriptions and black-box testing. It contains no code from Claude in Chrome and is not affiliated with or endorsed by Anthropic.
 
 Status: early. Tested interactively on ~36 popular websites and by an automated end-to-end test (see [Tests](#tests)).
@@ -63,7 +67,7 @@ The relay listens on `127.0.0.1:8766`. `deploy/hermes-tabs-relay.service` is a s
 **2. Load the extension**
 
 1. Open the extensions page of your browser (for example `chrome://extensions`) and turn on developer mode.
-2. Choose "Load unpacked" and select the `extension/` folder.
+2. Choose "Load unpacked" and select the `extension/` folder (Hermes Tabs) or, after `python build.py`, the `dist/agent-tabs/` folder (Agent Tabs). You can also unpack a zip from the releases and select that folder.
 3. Open the extension's options. Enter the relay address (default `ws://127.0.0.1:8766/ext`) and the token, then save. If several browsers use the same relay, give each a name (for example Desktop, Laptop).
 
 The toolbar icon shows a badge while the extension is disconnected. Once it is connected, `GET /admin/status` on the relay (with `Authorization: Bearer <token>`) reports the connected browsers and the version of the selected one.
@@ -78,7 +82,7 @@ Any MCP client that supports streamable HTTP can use the relay:
 |---|---|
 | URL | `http://127.0.0.1:8766/mcp` |
 | Transport | streamable HTTP |
-| Header | `Authorization: Bearer <HERMES_TABS_TOKEN>` |
+| Header | `Authorization: Bearer <HERMES_TABS_TOKEN>` (or `AGENT_TABS_TOKEN`, see [Configuration](#configuration)) |
 
 The server is stateless, so restarting the relay does not break client sessions. Requests that carry an `Origin` header (anything coming from a browser) are rejected with 403, as protection against DNS rebinding.
 
@@ -97,6 +101,23 @@ mcp_servers:
 
 For the optional Hermes plugin (settings page, extra guard rails) see [Hermes plugin](#hermes-plugin).
 
+**Example: Claude Code**
+
+```bash
+claude mcp add --transport http tabs http://127.0.0.1:8766/mcp --header "Authorization: Bearer $AGENT_TABS_TOKEN"
+```
+
+This writes the token itself into Claude Code's configuration. To try it without changing the configuration, pass a JSON file with the same server to `claude --mcp-config <file>`.
+
+**Example: Codex**
+
+```toml
+# ~/.codex/config.toml (Codex reads the token from the environment variable when it starts)
+[mcp_servers.tabs]
+url = "http://127.0.0.1:8766/mcp"
+bearer_token_env_var = "AGENT_TABS_TOKEN"
+```
+
 **Running over a network.** By default the relay only listens on localhost. If the agent or the browser is on another machine, set `HERMES_TABS_HOST` (for example `0.0.0.0`). Then put a reverse proxy with TLS in front of the relay and use `wss://` for the extension and `https://` for the MCP client. Without TLS, the token and everything the agent reads cross the network in clear text. Two things to know about the proxy: the extension sends the token as a query parameter (`/ext?token=…`), so turn off the access log for `/ext` or mask query strings; and `/mcp` accepts any `Host` header, so no extra proxy configuration is needed for it.
 
 ## Configuration
@@ -111,6 +132,8 @@ For the optional Hermes plugin (settings page, extra guard rails) see [Hermes pl
 | `HERMES_TABS_PORT` | Port. Default `8766`. |
 | `HERMES_TABS_GIF_DIR` | Directory for exported GIFs, default `~/.cache/hermes-tabs`. The relay user must own it and others must not be able to write to it. |
 | `HERMES_TABS_UPLOAD_ROOTS` | Colon-separated directories that `file_upload(paths=...)` may read from, default: only `HERMES_TABS_GIF_DIR`. |
+
+Every variable can also be spelled `AGENT_TABS_…` (for example `AGENT_TABS_TOKEN`); that spelling wins if both are set.
 
 **Extension** (options page): relay address (default `ws://127.0.0.1:8766/ext`), token and the name of this browser (on first start a random star name such as "Vega 42", changeable). The interface follows the browser language: English, German, French, Spanish, Russian, Japanese, Chinese (simplified and traditional) and Arabic.
 
@@ -154,7 +177,7 @@ While the agent works in a tab:
 - A bar at the bottom reads "Hermes is controlling this tab" and has a **Stop** button.
 - After 6 s without activity, everything disappears. Screenshots returned to the agent do not contain the overlay.
 
-**Stop** withdraws the tab's permission, removes it from the "Hermes" tab group and detaches the debugger. The overlay lets clicks through while the agent clicks, so the agent cannot hit Stop or an approval button. Buttons only react to real user clicks: the page cannot press them or fake an approval.
+**Stop** withdraws the tab's permission, removes it from the agent's tab group and detaches the debugger. The overlay lets clicks through while the agent clicks, so the agent cannot hit Stop or an approval button. Buttons only react to real user clicks: the page cannot press them or fake an approval.
 
 The page can notice the overlay while it is shown, and it can try to remove or hide it. The extension puts it back; if the page keeps doing it, the extension stops fighting, marks the toolbar icon of the tab with "!", shows a desktop notification and warns the agent in every answer until the page is left. For approvals the desktop notification is the second channel, which the page cannot touch.
 
@@ -162,17 +185,17 @@ The browser itself also shows its "is being debugged" notice on controlled tabs.
 
 ## Which tabs the agent can use
 
-- Tabs the agent opens itself. They go into a tab group called "Hermes", and the agent may close only these.
+- Tabs the agent opens itself. They go into a tab group called "Hermes" (Agent Tabs: "Agent"), and the agent may close only these.
 - Tabs you share by clicking the extension's toolbar icon (badge shows a check mark; a second click withdraws it).
 - Tabs opened by an agent tab (for example links with `target=_blank`) also belong to the agent.
 
-After an extension reload or a browser restart, tabs in a tab group named "Hermes" are taken over as the agent's own again (so a group of your own with that name counts as agent tabs).
+After an extension reload or a browser restart, tabs in a tab group with that name are taken over as the agent's own again (so a group of your own with that name counts as agent tabs).
 
 Sharing lasts until the browser restarts. The boundary is the tab, not the account: in a shared tab the agent has your logins for that site.
 
 ## Permissions per website
 
-Reading is free in shared tabs. **Acting** needs your permission for the website: clicks, typing, keys, `form_input`, uploads and confirming dialogs. The question appears in the tab and as a desktop notification. If you dismiss it, that means no; after 50 s without an answer the extension declines. Tabs you shared yourself count as approved for the website they showed when you shared them (other pages of that website too). If the agent takes such a tab to another website, it asks as usual; the tab stays shared, so reading goes on. The prompt shows the agent's own description of the action on a separate line ("Hermes says: …", at most 120 characters). Level `full` skips the question; in the levels without the `act` ability nothing acts at all (see [Safeguards](#safeguards)).
+Reading is free in shared tabs. **Acting** needs your permission for the website: clicks, typing, keys, `form_input`, uploads and confirming dialogs. The question appears in the tab and as a desktop notification. If you dismiss it, that means no; after 50 s without an answer the extension declines. Tabs you shared yourself count as approved for the website they showed when you shared them (other pages of that website too). If the agent takes such a tab to another website, it asks as usual; the tab stays shared, so reading goes on. The prompt shows the agent's own description of the action on a separate line ("Hermes says: …" or "The agent says: …", at most 120 characters). Level `full` skips the question; in the levels without the `act` ability nothing acts at all (see [Safeguards](#safeguards)).
 
 Approval levels:
 
@@ -314,10 +337,12 @@ Needs `chromium` or `google-chrome` on the `PATH`; a run takes about 3–4 minut
 
 The test starts the relay, a headless Chromium with the extension loaded, and a test page (iframe, shadow DOM, dialog, HTML5 drag and drop, slider, file input, console, network, keyboard shortcuts). It calls all tools over MCP at display scale 1 and 2, and also checks the tab boundary, the token, permissions (no answer, no, once, always, revocation in the options), stop, the password block, foreign iframes, the script write protection (including popups and web workers) several browsers at one relay (with a simulated second browser), the website binding of shared tabs, `data:` pages, autofill and paste keys, a page that removes the overlay, and that the agent's token cannot use the admin routes. User clicks are simulated through a separate debugger as real mouse events.
 
+To test the Agent Tabs build: `python build.py && SMOKE_EXT=dist/agent-tabs uv run python smoke_test.py` (that run also configures the relay with the `AGENT_TABS_*` spelling of its variables).
+
 Ports can be changed with `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` and `SMOKE_CDP_PORT`, so runs can go in parallel. With `SMOKE_SHOTS=<folder>` the test saves images of the overlay.
 
 ## License
 
 MIT – see [LICENSE](LICENSE).
 
-The Hermes logo in the extension (icon, options page, overlay) is © Nous Research, MIT License (see [extension/NOTICE](extension/NOTICE)). hermes-tabs is not an official Nous Research project.
+The Hermes logo in the extension (icon, options page, overlay) is © Nous Research, MIT License (see [extension/NOTICE](extension/NOTICE)). hermes-tabs is not an official Nous Research project. The Agent Tabs icon (`brand/agent/icon*.png`) is our own drawing, MIT License like the rest of the repository.

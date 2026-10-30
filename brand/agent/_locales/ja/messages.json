@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "個別のタブを AI エージェントと共有します。接続はご自身のリレーを経由します。"
+  },
+  "actionTitle": {
+    "message": "Agent Tabs: このタブを共有 / 共有を解除"
+  },
+  "overlayBar": {
+    "message": "エージェントがこのタブを操作しています"
+  },
+  "askText": {
+    "message": "エージェントが $HOST$ で操作しようとしています",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "エージェントのメッセージ: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "エージェントが許可を求めています"
+  },
+  "optBrowserHeading": {
+    "message": "ブラウザーでのエージェント"
+  },
+  "optEnabled": {
+    "message": "有効 (オフにするとエージェントはブラウザーで何もできません)"
+  },
+  "optActionsHelp": {
+    "message": "エージェントは自分のタブ内ならどこでも読み取れます。クリック、入力、フォームの操作には許可が必要です。"
+  },
+  "optBlockedHelp": {
+    "message": "ここではエージェントは読み取りも含めて何もできません (サブドメインを含む)。"
+  },
+  "pairTitle": {
+    "message": "エージェントがブラウザーを使おうとしています"
+  },
+  "pairText": {
+    "message": "このブラウザーをエージェントで使いますか? エージェントに作業させたいブラウザーで [接続] をクリックしてください。"
+  },
+  "optBrowserNameHelp": {
+    "message": "複数のブラウザーがリレーに接続されているときにエージェントに表示されます (例: デスクトップ、ノート PC)。"
+  },
+  "optTokenHelp": {
+    "message": "リレーのアクセス トークンです (AGENT_TABS_TOKEN)。"
+  },
+  "looseTitle": {
+    "message": "エージェントにさらに許可しますか?"
+  },
+  "looseText": {
+    "message": "設定の変更で次の許可が求められています: $LIST$。ご自身で行った変更 (お使いのエージェントの設定など) の場合のみ承認してください。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "ブラウザーでエージェントをオンにする"
+  },
+  "optSafetyHelp": {
+    "message": "エージェントが自分のタブでできること。スイッチを個別に変更するとカスタム設定になります。"
+  },
+  "safety_passwords_desc": {
+    "message": "パスワード欄への入力。エージェントはチャットやコンテキストにある認証情報を入力できるようになります。"
+  },
+  "warnLoosen": {
+    "message": "エージェントの権限が増えます: $LIST$。続行しますか?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意: エージェントはチャットやコンテキストにある認証情報を入力できるようになります。たとえば、あなたが伝えたパスワードや、どこかで読み取ったパスワードです。エージェントに代わりにログインさせたい場合にのみオンにしてください。"
+  },
+  "tamperTitle": {
+    "message": "ページがエージェントの表示を隠しています"
+  },
+  "tamperText": {
+    "message": "$HOST$ がエージェントの表示を繰り返し削除しています。タブ内でエージェントが何をしているか見えない可能性があります。不安な場合はツールバーのアイコンで停止してください。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

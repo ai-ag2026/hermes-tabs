@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Agent Tabs"
+  },
+  "extDescription": {
+    "message": "Gibt deinem KI-Agenten einzelne Tabs frei; die Verbindung läuft über das eigene Relay."
+  },
+  "actionTitle": {
+    "message": "Agent Tabs: diesen Tab freigeben / entziehen"
+  },
+  "overlayBar": {
+    "message": "Der Agent steuert diesen Tab"
+  },
+  "askText": {
+    "message": "Der Agent möchte auf $HOST$ handeln",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "askSays": {
+    "message": "Der Agent sagt: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Der Agent bittet um Freigabe"
+  },
+  "optBrowserHeading": {
+    "message": "Der Agent im Browser"
+  },
+  "optEnabled": {
+    "message": "Aktiviert (aus: Der Agent kann gar nichts im Browser tun)"
+  },
+  "optActionsHelp": {
+    "message": "Lesen darf der Agent überall in seinen Tabs. Klicken, Tippen und Formulare nur mit Freigabe."
+  },
+  "optBlockedHelp": {
+    "message": "Hier darf der Agent gar nichts, auch nicht lesen (Subdomains eingeschlossen)."
+  },
+  "pairTitle": {
+    "message": "Der Agent möchte einen Browser verwenden"
+  },
+  "pairText": {
+    "message": "Diesen Browser für den Agenten verwenden? Klicke in dem Browser auf Verbinden, in dem der Agent arbeiten soll."
+  },
+  "optBrowserNameHelp": {
+    "message": "Sieht der Agent, wenn mehrere Browser am Relay hängen (z. B. Desktop, Laptop)."
+  },
+  "optTokenHelp": {
+    "message": "Zugangs-Token des Relays (AGENT_TABS_TOKEN)."
+  },
+  "looseTitle": {
+    "message": "Dem Agenten mehr erlauben?"
+  },
+  "looseText": {
+    "message": "Eine Änderung der Einstellungen will erlauben: $LIST$. Bestätige nur, wenn du sie selbst vorgenommen hast (z. B. in den Einstellungen deines Agenten).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseEnabled": {
+    "message": "Den Agenten im Browser einschalten"
+  },
+  "optSafetyHelp": {
+    "message": "Wie viel der Agent in seinen Tabs darf. Wer einen einzelnen Schalter ändert, hat eine eigene Einstellung."
+  },
+  "safety_passwords_desc": {
+    "message": "Tippen in Passwortfelder. Der Agent kann dann Zugangsdaten eingeben, die im Chat oder seinem Kontext stehen."
+  },
+  "warnLoosen": {
+    "message": "Der Agent bekommt mehr Rechte: $LIST$. Fortfahren?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Achtung: Der Agent kann dann Zugangsdaten eingeben, die im Chat oder seinem Kontext stehen – etwa Passwörter, die du ihm genannt hast oder die er irgendwo gelesen hat. Schalte das nur ein, wenn sich der Agent für dich anmelden soll."
+  },
+  "tamperTitle": {
+    "message": "Die Seite versteckt die Einblendung des Agenten"
+  },
+  "tamperText": {
+    "message": "$HOST$ entfernt die Einblendung des Agenten immer wieder – du siehst im Tab womöglich nicht, was der Agent tut. Im Zweifel über das Symbol in der Werkzeugleiste stoppen.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

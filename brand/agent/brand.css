@@ -1,0 +1,15 @@
+/* Colours of the options page of "Agent Tabs": neutral greys, teal accent, light and dark. */
+:root {
+  --bg: #f7f8f8; --surface: #ffffff; --text: #1f2328; --text-2: #4b5157; --text-3: #7a8087;
+  --stroke: #d9dee3; --stroke-strong: #c4cbd2; --accent: #0f766e; --on-accent: #fff;
+  --ctl: #eceff1; --ctl-hover: #dfe3e6; --row-hover: #f2f4f5;
+  --danger: #c62f4b; --radius: 4px; --radius-card: 6px;
+  font: 13px/1.45 "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1113; --surface: #161a1d; --text: #dfe4e8; --text-2: #b0b7bd; --text-3: #868d93;
+    --stroke: #262c31; --stroke-strong: #313840; --accent: #2dd4bf; --on-accent: #0b1513;
+    --ctl: #22282d; --ctl-hover: #2d353b; --row-hover: #1c2125; --danger: #f0587e;
+  }
+}
