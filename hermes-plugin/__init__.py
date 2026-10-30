@@ -8,11 +8,12 @@ The extension enforces everything itself (it sees the real tab URL, including af
 This hook complements that for Hermes' other tools:
 
 * Master switch off -> ``mcp__tabs__*`` is rejected (saves the round trip to the browser).
-* Blocked sites -> ``browser_exec``/``browser_cdp`` (Hermes' own browser) and ``web_extract`` also reject
-  calls whose arguments contain a blocked domain. Limit: ``browser_exec`` is free-form code - assembled URLs
-  or clicks on links are not detected by the hook.
-* Hermes never operates its own settings pages (web UI, dashboard), otherwise it could grant itself rights.
-  List the hosts of those pages in ``HERMES_TABS_OWN_HOSTS`` (comma-separated, e.g. ``hermes.example.org,10.0.0.5``).
+* Hermes never operates its own settings pages (web UI, dashboard) through the extension, otherwise it could grant
+  itself rights. List the hosts of those pages in ``HERMES_TABS_OWN_HOSTS`` (comma-separated, e.g.
+  ``hermes.example.org,10.0.0.5``).
+* Opt-in (switch "Also for Hermes' other web tools", off by default, stored in ``plugin-data/hermes-tabs/options.json``):
+  blocked sites and own hosts then also apply to ``browser_exec``/``browser_cdp`` (Hermes' own browser) and
+  ``web_extract``. Limit: ``browser_exec`` is free-form code - assembled URLs or clicks on links are not detected.
 
 If the browser is closed, the last seen state applies (``plugin-data/hermes-tabs/settings.json``).
 
@@ -41,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 RELAY = os.environ.get("HERMES_TABS_RELAY", "http://127.0.0.1:8766").rstrip("/")
 CACHE = Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")) / "plugin-data" / "hermes-tabs" / "settings.json"
+# Settings of the plugin itself (not of the browser): {"guardOtherTools": bool}
+OPTIONS = CACHE.with_name("options.json")
 # Own user interfaces: Hermes must not grant itself rights through the browser.
 OWN_HOSTS = tuple(h.strip().lower() for h in os.environ.get("HERMES_TABS_OWN_HOSTS", "").split(",") if h.strip())
 BROWSER_TOOLS = ("browser_exec", "browser_cdp", "web_extract")
@@ -96,6 +99,20 @@ def settings() -> dict:
         return _cache["settings"] or {}
 
 
+def options() -> dict:
+    try:
+        return json.loads(OPTIONS.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def set_options(changes: dict) -> dict:
+    opts = {**options(), **changes}
+    OPTIONS.parent.mkdir(parents=True, exist_ok=True)
+    OPTIONS.write_text(json.dumps(opts))
+    return opts
+
+
 def _hosts(value: Any):
     if isinstance(value, str):
         for m in URL_RE.finditer(value):
@@ -112,9 +129,9 @@ def _matches(host: str, domains) -> Optional[str]:
     return next((d for d in domains if host == d or host.endswith("." + d)), None)
 
 
-def decide(tool_name: str, args: Any, current: dict) -> Optional[Dict[str, str]]:
+def decide(tool_name: str, args: Any, current: dict, guard_other: bool = False) -> Optional[Dict[str, str]]:
     is_tabs = tool_name.startswith("mcp__tabs__")
-    if not (is_tabs or tool_name in BROWSER_TOOLS):
+    if not (is_tabs or (guard_other and tool_name in BROWSER_TOOLS)):
         return None
     if is_tabs and current.get("enabled") is False:
         return {"action": "block", "message": "Hermes in the browser is turned off (Settings -> Plugins -> Hermes in the browser). "
@@ -131,10 +148,10 @@ def decide(tool_name: str, args: Any, current: dict) -> Optional[Dict[str, str]]
 
 
 def _on_pre_tool_call(tool_name: str = "", args: Any = None, **_: Any) -> Optional[Dict[str, str]]:
-    if not tool_name or not (tool_name.startswith("mcp__tabs__") or tool_name in BROWSER_TOOLS):
+    if not tool_name.startswith("mcp__tabs__") and not (tool_name in BROWSER_TOOLS and options().get("guardOtherTools") is True):
         return None
     try:
-        return decide(tool_name, args, settings())
+        return decide(tool_name, args, settings(), guard_other=True)
     except Exception as exc:  # the extension enforces on its own; a broken hook must not block everything
         logger.warning("hermes-tabs: error in hook for %s: %s", tool_name, exc)
         return None
@@ -148,13 +165,16 @@ if __name__ == "__main__":  # self-test without Hermes or network
     s = {"enabled": True, "blockedSites": ["linkedin.com"]}
     assert decide("terminal", {"cmd": "curl linkedin.com"}, s) is None
     assert decide("mcp__tabs__navigate", {"url": "https://www.linkedin.com/feed"}, s)["action"] == "block"
-    assert decide("browser_exec", {"code": "page.goto('https://de.linkedin.com/x')"}, s)["action"] == "block"
+    assert decide("browser_exec", {"code": "page.goto('https://de.linkedin.com/x')"}, s) is None  # opt-in, off by default
+    assert decide("browser_exec", {"code": "page.goto('https://de.linkedin.com/x')"}, s, guard_other=True)["action"] == "block"
     assert decide("mcp__tabs__navigate", {"url": "https://example.com"}, s) is None
     assert decide("mcp__tabs__navigate", {"url": "https://notlinkedin.com"}, s) is None
-    assert decide("browser_exec", {"code": "goto('https://hermes.example.org/settings')"}, s) is None  # OWN_HOSTS empty by default
+    assert decide("browser_exec", {"code": "goto('https://hermes.example.org/settings')"}, s, True) is None  # OWN_HOSTS empty by default
     OWN_HOSTS = ("hermes.example.org", "10.0.0.5")
-    assert "own interface" in decide("browser_exec", {"code": "goto('https://hermes.example.org/settings')"}, s)["message"]
-    assert "own interface" in decide("browser_exec", {"code": "goto('http://10.0.0.5:9119/')"}, s)["message"]
+    assert "own interface" in decide("browser_exec", {"code": "goto('https://hermes.example.org/settings')"}, s, True)["message"]
+    assert "own interface" in decide("browser_exec", {"code": "goto('http://10.0.0.5:9119/')"}, s, True)["message"]
+    assert decide("browser_exec", {"code": "goto('http://10.0.0.5:9119/')"}, s) is None
+    assert "own interface" in decide("mcp__tabs__navigate", {"url": "http://10.0.0.5:9119/"}, s)["message"]
     assert "turned off" in decide("mcp__tabs__read_page", {"tabId": 1}, {"enabled": False})["message"]
     assert decide("browser_exec", {"code": "x"}, {"enabled": False}) is None  # the switch only concerns the extension
     print("ok")

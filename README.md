@@ -276,8 +276,8 @@ Settings page: which browser Hermes works in (with several browsers on the relay
 The plugin's `pre_tool_call` hook adds the following. It recognises the browser tools by the prefix `mcp__tabs__`, so the MCP server must be named `tabs` in the Hermes config (as in the example above):
 
 - Master switch off: `mcp__tabs__*` calls are rejected early.
-- Blocked sites also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments. Limit: for free-form code in `browser_exec`, composed URLs and clicks on links are not recognised.
-- If `HERMES_TABS_OWN_HOSTS` is set (comma-separated hosts of the agent's own interface; empty by default), the agent never operates those hosts, so it cannot give itself permissions through the browser.
+- If `HERMES_TABS_OWN_HOSTS` is set (comma-separated hosts of the agent's own interface; empty by default), the agent never operates those hosts through the extension, so it cannot give itself permissions through the browser.
+- Opt-in, off by default: the switch "Also block for Hermes' other web tools" on the plugin page makes blocked sites and `HERMES_TABS_OWN_HOSTS` also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments. Limit: for free-form code in `browser_exec`, composed URLs and clicks on links are not recognised.
 
 If the browser is closed, the hook uses the last seen settings.
 

@@ -11,8 +11,8 @@ Settings page and guard rails for [hermes-tabs](https://github.com/ai-ag2026/her
 - **Language:** the settings page follows the language set in Hermes (and switches live): English, German, French, Spanish, Russian, Japanese, Chinese (simplified and traditional) and Arabic, as in the Hermes desktop app; other languages fall back to English. The German and English texts are maintained by hand, all others are machine translations - corrections are welcome (the texts are the `STR` object in `desktop/plugin.js`).
 - **`pre_tool_call` hook:**
   - master switch off: `mcp__tabs__*` calls are rejected early;
-  - blocked sites also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments;
-  - hosts listed in `HERMES_TABS_OWN_HOSTS` (the agent's own interface) are never operated, so the agent cannot grant itself permissions through the browser.
+  - hosts listed in `HERMES_TABS_OWN_HOSTS` (the agent's own interface) are never operated through the extension, so the agent cannot grant itself permissions through the browser;
+  - opt-in, off by default (switch "Also block for Hermes' other web tools", stored in `plugin-data/hermes-tabs/options.json`): blocked sites and own hosts also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments.
 
 ## Configuration
 

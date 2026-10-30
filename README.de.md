@@ -276,8 +276,8 @@ Einstellungsseite: in welchem Browser Hermes arbeitet (bei mehreren Browsern am 
 Der `pre_tool_call`-Hook des Plugins ergänzt das Folgende. Er erkennt die Browser-Werkzeuge am Präfix `mcp__tabs__`, deshalb muss der MCP-Server in der Hermes-Konfiguration `tabs` heißen (wie im Beispiel oben):
 
 - Gesamtschalter aus: `mcp__tabs__*` wird vorab abgelehnt.
-- Blockierte Seiten gelten auch für Hermes' eigene Browser-Werkzeuge (`browser_exec`, `browser_cdp`) und für `web_extract`, wenn die Domain in den Argumenten steht. Grenze: Bei freiem Code in `browser_exec` erkennt der Hook zusammengesetzte URLs und Klicks auf Links nicht.
-- Ist `HERMES_TABS_OWN_HOSTS` gesetzt (kommagetrennte Hosts der eigenen Oberfläche des Agenten; Vorgabe leer), bedient der Agent diese Hosts nie, damit er sich über den Browser keine Rechte geben kann.
+- Ist `HERMES_TABS_OWN_HOSTS` gesetzt (kommagetrennte Hosts der eigenen Oberfläche des Agenten; Vorgabe leer), bedient der Agent diese Hosts über die Extension nie, damit er sich über den Browser keine Rechte geben kann.
+- Zum Einschalten, Vorgabe aus: Mit dem Schalter „Auch für Hermes’ andere Web-Werkzeuge sperren“ auf der Plugin-Seite gelten blockierte Seiten und `HERMES_TABS_OWN_HOSTS` auch für Hermes' eigene Browser-Werkzeuge (`browser_exec`, `browser_cdp`) und für `web_extract`, wenn die Domain in den Argumenten steht. Grenze: Bei freiem Code in `browser_exec` erkennt der Hook zusammengesetzte URLs und Klicks auf Links nicht.
 
 Ist der Browser zu, gilt für den Hook der zuletzt gesehene Stand.
 
