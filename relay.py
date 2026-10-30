@@ -83,8 +83,8 @@ server = MCPServer(
 # A browser that connects later never takes over: only select_browser/switch_browser change the selection.
 browsers: dict[str, dict] = {}  # deviceId -> {"ws", "name", "platform", "connectedAt"}
 names: dict[str, str] = {}  # deviceId -> last known name, also for browsers that went away
-# ponytail: selection lives in memory and is shared by all agent chats; after a relay restart the first command
-# picks the browser if exactly one is connected by then, with several the agent has to ask. Persist it or make it
+# ponytail: selection lives in memory and is shared by all agent chats; after a relay restart the first browser
+# to reconnect becomes the selection, so the desktop can lose to a laptop that reconnects faster. Persist it or make it
 # per chat (once Hermes sends a chat id) if that bites.
 selected: str | None = None
 PAIR_TIMEOUT = 120
@@ -615,6 +615,7 @@ def clean(s: str, n: int) -> str:
 
 
 async def ext_endpoint(ws: WebSocket):
+    global selected
     # Only the extension (origin chrome-extension://...) and only with the token; the origin alone proves nothing.
     q = ws.query_params
     origin = ws.headers.get("origin", "")
@@ -630,6 +631,8 @@ async def ext_endpoint(ws: WebSocket):
     browsers[device] = {"ws": ws, "name": name, "platform": clean(q.get("platform", ""), 20),
                         "connectedAt": int(time.time() * 1000)}
     names[device] = name
+    if selected is None and len(browsers) == 1:  # the only browser is the choice, so one connecting later cannot leave none selected
+        selected = device
     if old is not None:
         with contextlib.suppress(Exception):  # the old transport may already be gone
             await old["ws"].close(code=1012)
