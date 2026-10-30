@@ -3,13 +3,14 @@ const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs);
 for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = msg(el.dataset.i18n);
 document.documentElement.lang = chrome.i18n.getUILanguage();
 
-chrome.storage.local.get({ relay: "ws://127.0.0.1:8766/ext", token: "" }).then((c) => {
+chrome.storage.local.get({ relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" }).then((c) => {
   $("relay").value = c.relay;
   $("token").value = c.token;
+  $("browserName").value = c.browserName;
 });
 
 $("save").onclick = async () => {
-  await chrome.storage.local.set({ relay: $("relay").value.trim(), token: $("token").value.trim() });
+  await chrome.storage.local.set({ relay: $("relay").value.trim(), token: $("token").value.trim(), browserName: $("browserName").value.trim() });
   $("status").textContent = msg("optSaved");
 };
 

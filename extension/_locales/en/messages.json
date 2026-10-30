@@ -190,5 +190,20 @@
   },
   "optBadDomain": {
     "message": "Please enter a domain such as example.com"
+  },
+  "pairTitle": {
+    "message": "Hermes wants to use a browser"
+  },
+  "pairText": {
+    "message": "Use this browser for Hermes? Click Connect in the browser Hermes should work in."
+  },
+  "pairConnect": {
+    "message": "Connect"
+  },
+  "optBrowserName": {
+    "message": "Name of this browser"
+  },
+  "optBrowserNameHelp": {
+    "message": "Shown to Hermes when several browsers are connected to the relay (e.g. Desktop, Laptop)."
   }
 }

@@ -5,7 +5,7 @@
 
 importScripts("page.js"); // HERMES_PAGE: runs in the page via Runtime.evaluate
 
-const DEFAULTS = { relay: "ws://127.0.0.1:8766/ext", token: "" };
+const DEFAULTS = { relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" };
 const GROUP_TITLE = "Hermes";
 const VERSION = chrome.runtime.getManifest().version;
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs); // texts the user sees (_locales)
@@ -721,10 +721,42 @@ function askPermission(tabId, origin, host, summary, timeoutMs) {
   return entry.promise;
 }
 
+// switch_browser: "Connect" in the browser the user wants Hermes to use (one request at a time).
+let pairAsk = null; // { notifId, pairId, resolve(ok) }
+
+function askPair(timeoutMs, pairId) {
+  pairAsk?.resolve(false);
+  const notifId = `hermes-pair-${Date.now()}`;
+  return new Promise((done) => {
+    const timer = setTimeout(() => entry.resolve(false), timeoutMs);
+    const entry = {
+      notifId,
+      pairId,
+      resolve(ok) {
+        if (pairAsk !== entry) return;
+        pairAsk = null;
+        clearTimeout(timer);
+        chrome.notifications.clear(notifId).catch?.(() => {});
+        done(ok);
+      },
+    };
+    pairAsk = entry;
+    try {
+      chrome.notifications.create(notifId, {
+        type: "basic", iconUrl: "icon128.png", title: msg("pairTitle"), message: msg("pairText"), requireInteraction: true,
+        buttons: [{ title: msg("pairConnect") }],
+      }, () => void chrome.runtime.lastError);
+    } catch {}
+  });
+}
+
+chrome.notifications.onClicked.addListener((id) => pairAsk?.notifId === id && pairAsk.resolve(true));
 chrome.notifications.onButtonClicked.addListener((id, index) => {
+  if (pairAsk?.notifId === id) pairAsk.resolve(true);
   for (const e of pendingAsks.values()) if (e.notifId === id) e.resolve(index === 0 ? "session" : "all1h");
 });
 chrome.notifications.onClosed.addListener((id, byUser) => {
+  if (byUser && pairAsk?.notifId === id) pairAsk.resolve(false);
   if (byUser) for (const e of pendingAsks.values()) if (e.notifId === id) e.resolve("deny");
 });
 
@@ -795,6 +827,16 @@ const handlers = {
   reload() {
     setTimeout(() => chrome.runtime.reload(), 200); // reloads the files from disk
     return "reloading";
+  },
+
+  async pair({ timeoutMs, pairId }) {
+    if (!(await askPair(Math.min(timeoutMs ?? 120000, 120000), pairId))) throw new Error("Not chosen in this browser");
+    return true;
+  },
+
+  pair_cancel({ pairId }) {
+    if (pairAsk?.pairId === pairId) pairAsk.resolve(false);
+    return true;
   },
 
   async tabs_context({ createIfEmpty }) {
@@ -989,12 +1031,23 @@ let connecting = false;
 async function connect() {
   if (ws || connecting) return;
   connecting = true;
-  const { relay, token } = await chrome.storage.local.get(DEFAULTS).finally(() => (connecting = false));
+  let cfg;
+  try {
+    cfg = await chrome.storage.local.get({ ...DEFAULTS, deviceId: "" });
+    // identifies this browser at the relay; created while still "connecting" so a parallel connect() cannot make a second one
+    if (cfg.token && !cfg.deviceId) await chrome.storage.local.set({ deviceId: (cfg.deviceId = crypto.randomUUID()) });
+  } finally {
+    connecting = false;
+  }
+  const { relay, token, browserName, deviceId } = cfg;
   if (!token) return setState(false);
-  const sock = new WebSocket(`${relay}?token=${encodeURIComponent(token)}`);
+  const platform = navigator.userAgentData?.platform ?? "";
+  const q = new URLSearchParams({ token, device: deviceId, name: browserName || `${platform || "Browser"} ${deviceId.slice(0, 4)}`, platform });
+  const sock = new WebSocket(`${relay}?${q}`);
   ws = sock;
   sock.onopen = () => setState(true);
   sock.onclose = () => {
+    pairAsk?.resolve(false); // its answer could no longer reach the relay
     if (ws === sock) ws = null;
     setState(false);
     setTimeout(connect, 3000);
@@ -1004,7 +1057,7 @@ async function connect() {
     let reply;
     try {
       if (!handlers[method]) throw new Error(`Unknown command ${method} (extension ${VERSION})`);
-      if (!["status", "settings", "reload"].includes(method) && (await chrome.storage.local.get("enabled")).enabled === false) {
+      if (!["status", "settings", "reload", "pair_cancel"].includes(method) && (await chrome.storage.local.get("enabled")).enabled === false) {
         throw new Error("Hermes in the browser is turned off – the user can turn it on in the extension options or the Hermes plugin settings");
       }
       const p = params ?? {};
@@ -1033,7 +1086,7 @@ setInterval(() => ws?.readyState === WebSocket.OPEN && ws.send('{"ping":1}'), 20
 chrome.alarms.create("keepalive", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(connect);
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && (changes.relay || changes.token)) {
+  if (area === "local" && (changes.relay || changes.token || changes.browserName)) {
     const old = ws;
     ws = null;
     old?.close();

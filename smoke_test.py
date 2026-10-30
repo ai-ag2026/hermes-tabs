@@ -7,6 +7,7 @@ once at scale factor 1 and once at 2. Starts everything itself and cleans up aft
 """
 
 import asyncio
+import contextlib
 import itertools
 import json
 import os
@@ -17,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -105,6 +107,27 @@ class T:
         r = await self.raw(name, **args)
         assert not r.is_error, f"{name}: {r.content[0].text}"
         return "\n".join(c.text for c in r.content if c.type == "text")
+
+
+@contextlib.asynccontextmanager
+async def fake_browser(device, name="Fake", pair=None, hold=()):
+    """A second browser at the relay: answers every command with "fake:<name>:<method>", accepts "pair"
+    after `pair` seconds (None: never) and never answers the methods in `hold`."""
+    q = urllib.parse.urlencode({"token": TOKEN, "device": device, "name": name})
+    async with websockets.connect(f"ws://127.0.0.1:{RELAY_PORT}/ext?{q}", origin="chrome-extension://test") as w:
+        async def serve():
+            async for raw in w:
+                m = json.loads(raw)
+                if m["method"] in hold or (m["method"] == "pair" and pair is None):
+                    continue
+                if m["method"] == "pair":
+                    await asyncio.sleep(pair)
+                await w.send(json.dumps({"id": m["id"], "result": True if m["method"] == "pair" else f"fake:{name}:{m['method']}"}))
+        task = asyncio.create_task(serve())
+        try:
+            yield w
+        finally:
+            task.cancel()
 
 
 def ref(page_text, pattern):
@@ -563,14 +586,46 @@ async def scenario(t: T, tmp: Path):
     await t("tabs_close", tabId=int(m[1]))
     await js("nb.remove(); 1")
 
-    # A new extension connection replaces the old one: its pending request fails immediately, not after 60 s
-    pending = asyncio.create_task(t.raw("computer", tabId=tid, action="wait", duration=8))
-    await asyncio.sleep(0.5)
-    async with websockets.connect(f"ws://127.0.0.1:{RELAY_PORT}/ext?token={TOKEN}", origin="chrome-extension://test"):
-        t0 = time.time()
-        r = await pending
-        assert r.is_error and "aborted" in r.content[0].text and time.time() - t0 < 3, r.content[0].text
-    await wait_connected()  # the real extension reconnects on its own
+    # Several browsers (as with Claude in Chrome): a browser that connects later does not take over
+    real = next(b for b in json.loads(await t("list_connected_browsers")) if b["inUse"])["deviceId"]
+    async with fake_browser("fake-1", pair=0.5, hold=("computer",)):
+        await asyncio.sleep(0.3)
+        bl = json.loads(await t("list_connected_browsers"))
+        assert len(bl) == 2 and [b["deviceId"] for b in bl if b["inUse"]] == [real], bl
+        assert "fake" not in await t("tabs_context")
+        await t("select_browser", deviceId="fake-1")
+        assert await t("tabs_context") == "fake:Fake:tabs_context"
+        r = await t.raw("select_browser", deviceId="nope")
+        assert r.is_error and "No connected browser" in r.content[0].text, r.content[0].text
+        await t("select_browser", deviceId=real)
+        assert "fake" not in await t("tabs_context")
+        # Admin routes can address a browser directly and say which one they configured
+        def admin_get(q):
+            return urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/settings?{q}",
+                                                                 headers={"Authorization": f"Bearer {ADMIN}"}))
+        assert json.load(admin_get(f"device={real}"))["browser"]["deviceId"] == real
+        try:
+            admin_get("device=nope")
+            raise AssertionError("/admin/settings accepts an unknown device")
+        except urllib.error.HTTPError as e:
+            assert e.code == 409, e.code
+        # switch_browser: the browser where the user clicks Connect wins, the others' request is withdrawn
+        assert "Fake" in await t("switch_browser")
+        assert await t("tabs_context") == "fake:Fake:tabs_context"
+        await asyncio.sleep(0.3)
+        assert await sw_eval("pairAsk === null") is True
+        # The same browser reconnecting replaces its old connection: its pending request fails at once, not after 60 s
+        pending = asyncio.create_task(t.raw("computer", tabId=tid, action="wait", duration=8))
+        await asyncio.sleep(0.5)
+        async with fake_browser("fake-1", name="Fake 2"):
+            t0 = time.time()
+            r = await pending
+            assert r.is_error and "aborted" in r.content[0].text and time.time() - t0 < 3, r.content[0].text
+            assert await t("tabs_context") == "fake:Fake 2:tabs_context"  # the selection follows the deviceId
+    await asyncio.sleep(0.3)
+    r = await t.raw("tabs_context")  # the selected browser went away: no fallback to another browser
+    assert r.is_error and "not connected" in r.content[0].text, r.content[0].text
+    await t("select_browser", deviceId=real)
 
     # (Extension reload is covered by a live test in a real browser: headless, reload() removes an extension loaded via command line.)
 

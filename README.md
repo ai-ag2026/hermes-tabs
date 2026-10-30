@@ -26,8 +26,8 @@ Status: early. Tested interactively on ~36 popular websites and by an automated 
 
 - The extension opens the connection **outward** to the relay. The browser machine runs no server and has no open port.
 - The relay exposes the tools to the agent over MCP (streamable HTTP, stateless, JSON responses) at `/mcp`.
-- One browser is connected at a time. A newer connection replaces the older one.
-- If the browser is closed, tool calls fail with "no browser connected".
+- Several browsers can be connected to one relay (for example desktop and laptop). All calls go to the selected browser; a browser that connects later never takes over. With a single browser it is selected automatically; with several, the agent asks you (`list_connected_browsers`, `select_browser`) or you click "Connect" in the browser you want (`switch_browser`), as with Claude in Chrome.
+- If the browser is closed, tool calls fail with "no browser connected" (or, with several browsers, name the selected browser that is missing).
 - Permissions are enforced inside the extension, not in the relay and not by the agent.
 
 Message formats and internals are in [PROTOCOL.md](PROTOCOL.md).
@@ -52,9 +52,9 @@ The relay listens on `127.0.0.1:8766`. `deploy/hermes-tabs-relay.service` is a s
 
 1. Open the extensions page of your browser (for example `chrome://extensions`) and turn on developer mode.
 2. Choose "Load unpacked" and select the `extension/` folder.
-3. Open the extension's options. Enter the relay address (default `ws://127.0.0.1:8766/ext`) and the token, then save.
+3. Open the extension's options. Enter the relay address (default `ws://127.0.0.1:8766/ext`) and the token, then save. If several browsers use the same relay, give each a name (for example Desktop, Laptop).
 
-The toolbar icon shows a badge while the extension is disconnected. Once it is connected, `GET /admin/status` on the relay (with `Authorization: Bearer <token>`) reports connection and version.
+The toolbar icon shows a badge while the extension is disconnected. Once it is connected, `GET /admin/status` on the relay (with `Authorization: Bearer <token>`) reports the connected browsers and the version of the selected one.
 
 The extension is distributed only as an unpacked extension. A Chrome Web Store listing is not planned, because the `debugger` permission is not accepted there.
 
@@ -109,6 +109,7 @@ For the optional Hermes plugin (settings page, extra guard rails) see [Hermes pl
 | Tool | Purpose |
 |---|---|
 | `tabs_context`, `tabs_create`, `tabs_close` | List shared tabs, open and close the agent's own tabs |
+| `list_connected_browsers`, `select_browser`, `switch_browser` | Choose which connected browser the calls go to |
 | `navigate` | Go to a URL, `back` / `forward` |
 | `read_page` | Accessibility-style tree with `ref_N` handles; `filter="interactive"`, `ref_id`, `depth`, `max_chars` |
 | `find` | Find elements by purpose or text (word matching; understands English and German words such as "search field" / "Suchfeld") |
@@ -237,7 +238,7 @@ uv run python smoke_test.py
 
 Needs `chromium` or `google-chrome` on the `PATH`; a run takes about 3–4 minutes.
 
-The test starts the relay, a headless Chromium with the extension loaded, and a test page (iframe, shadow DOM, dialog, HTML5 drag and drop, slider, file input, console, network, keyboard shortcuts). It calls all tools over MCP at display scale 1 and 2, and also checks the tab boundary, the token, permissions (no answer, no, once, always, revocation in the options), stop, the password block, foreign iframes and the script write protection (including popups and web workers). User clicks are simulated through a separate debugger as real mouse events.
+The test starts the relay, a headless Chromium with the extension loaded, and a test page (iframe, shadow DOM, dialog, HTML5 drag and drop, slider, file input, console, network, keyboard shortcuts). It calls all tools over MCP at display scale 1 and 2, and also checks the tab boundary, the token, permissions (no answer, no, once, always, revocation in the options), stop, the password block, foreign iframes, the script write protection (including popups and web workers) and several browsers at one relay (with a simulated second browser). User clicks are simulated through a separate debugger as real mouse events.
 
 Ports can be changed with `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` and `SMOKE_CDP_PORT`, so runs can go in parallel. With `SMOKE_SHOTS=<folder>` the test saves images of the overlay.
 

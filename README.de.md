@@ -26,8 +26,8 @@ Stand: früh. Interaktiv an ~36 gängigen Websites getestet, dazu ein automatisc
 
 - Die Extension baut die Verbindung **nach außen** zum Relay auf. Auf dem Browser-Rechner läuft kein Server, und es ist kein Port offen.
 - Das Relay stellt dem Agenten die Werkzeuge per MCP (Streamable HTTP, zustandslos, JSON-Antworten) unter `/mcp` bereit.
-- Es ist immer nur ein Browser verbunden. Eine neuere Verbindung ersetzt die ältere.
-- Ist der Browser zu, scheitern Aufrufe mit „Kein Browser verbunden“.
+- Mehrere Browser können am selben Relay hängen (z. B. Desktop und Laptop). Alle Aufrufe gehen an den ausgewählten Browser; ein später verbundener übernimmt nie. Ist nur einer verbunden, wird er automatisch gewählt; bei mehreren fragt dich der Agent (`list_connected_browsers`, `select_browser`) oder du klickst im gewünschten Browser auf „Verbinden“ (`switch_browser`), wie bei Claude in Chrome.
+- Ist der Browser zu, scheitern Aufrufe mit „Kein Browser verbunden“ (bei mehreren Browsern mit dem Namen des fehlenden ausgewählten).
 - Freigaben werden in der Extension durchgesetzt, nicht im Relay und nicht vom Agenten.
 
 Nachrichtenformate und Interna stehen in [PROTOCOL.md](PROTOCOL.md) (englisch).
@@ -52,9 +52,9 @@ Das Relay lauscht auf `127.0.0.1:8766`. `deploy/hermes-tabs-relay.service` ist e
 
 1. Die Erweiterungsseite des Browsers öffnen (z. B. `chrome://extensions`) und den Entwicklermodus einschalten.
 2. „Entpackte Erweiterung laden“ wählen und den Ordner `extension/` angeben.
-3. Die Optionen der Extension öffnen, die Relay-Adresse (Vorgabe `ws://127.0.0.1:8766/ext`) und den Token eintragen und speichern.
+3. Die Optionen der Extension öffnen, die Relay-Adresse (Vorgabe `ws://127.0.0.1:8766/ext`) und den Token eintragen und speichern. Hängen mehrere Browser am selben Relay, jedem einen Namen geben (z. B. Desktop, Laptop).
 
-Das Symbol in der Werkzeugleiste zeigt ein Badge, solange keine Verbindung besteht. Steht die Verbindung, melden `GET /admin/status` am Relay (mit `Authorization: Bearer <Token>`) Verbindung und Version.
+Das Symbol in der Werkzeugleiste zeigt ein Badge, solange keine Verbindung besteht. Steht die Verbindung, meldet `GET /admin/status` am Relay (mit `Authorization: Bearer <Token>`) die verbundenen Browser und die Version des ausgewählten.
 
 Die Extension wird nur als entpackte Erweiterung verteilt. Ein Eintrag im Chrome Web Store ist nicht vorgesehen, weil die Berechtigung `debugger` dort nicht akzeptiert wird.
 
@@ -109,6 +109,7 @@ Zum optionalen Hermes-Plugin (Einstellungsseite, zusätzliche Leitplanken) siehe
 | Werkzeug | Zweck |
 |---|---|
 | `tabs_context`, `tabs_create`, `tabs_close` | Freigegebene Tabs auflisten, eigene öffnen und schließen |
+| `list_connected_browsers`, `select_browser`, `switch_browser` | Wählen, an welchen verbundenen Browser die Aufrufe gehen |
 | `navigate` | URL aufrufen, `back` / `forward` |
 | `read_page` | Baum mit `ref_N`-Handles; `filter="interactive"`, `ref_id`, `depth`, `max_chars` |
 | `find` | Elemente nach Zweck oder Text finden (Wortabgleich; versteht englische und deutsche Wörter wie „search field“ / „Suchfeld“) |
@@ -237,7 +238,7 @@ uv run python smoke_test.py
 
 Braucht `chromium` oder `google-chrome` im `PATH`; ein Lauf dauert etwa 3–4 Minuten.
 
-Der Test startet das Relay, headless Chromium mit geladener Extension und eine Testseite (iframe, Shadow DOM, Dialog, HTML5-Drag&Drop, Slider, Datei-Feld, Konsole, Netzwerk, Tastenkürzel). Er ruft alle Werkzeuge über MCP auf, einmal mit Skalierung 1 und einmal mit 2, und prüft außerdem die Tab-Grenze, den Token, Freigaben (keine Antwort, Nein, Einmal, Immer, Widerruf in den Optionen), Stopp, die Passwortsperre, fremde iframes und den Skript-Schreibschutz (auch Popup und Web Worker). Die Nutzerklicks laufen dabei über einen eigenen Debugger als echte Mausereignisse.
+Der Test startet das Relay, headless Chromium mit geladener Extension und eine Testseite (iframe, Shadow DOM, Dialog, HTML5-Drag&Drop, Slider, Datei-Feld, Konsole, Netzwerk, Tastenkürzel). Er ruft alle Werkzeuge über MCP auf, einmal mit Skalierung 1 und einmal mit 2, und prüft außerdem die Tab-Grenze, den Token, Freigaben (keine Antwort, Nein, Einmal, Immer, Widerruf in den Optionen), Stopp, die Passwortsperre, fremde iframes, den Skript-Schreibschutz (auch Popup und Web Worker) und mehrere Browser an einem Relay (mit einem simulierten zweiten Browser). Die Nutzerklicks laufen dabei über einen eigenen Debugger als echte Mausereignisse.
 
 Ports lassen sich mit `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` und `SMOKE_CDP_PORT` ändern, damit mehrere Läufe parallel gehen. Mit `SMOKE_SHOTS=<Ordner>` legt der Test Bilder des Overlays ab.
 

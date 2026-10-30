@@ -190,5 +190,20 @@
   },
   "optBadDomain": {
     "message": "Bitte eine Domain wie example.com eingeben"
+  },
+  "pairTitle": {
+    "message": "Hermes möchte einen Browser verwenden"
+  },
+  "pairText": {
+    "message": "Diesen Browser für Hermes verwenden? Klicke in dem Browser auf Verbinden, in dem Hermes arbeiten soll."
+  },
+  "pairConnect": {
+    "message": "Verbinden"
+  },
+  "optBrowserName": {
+    "message": "Name dieses Browsers"
+  },
+  "optBrowserNameHelp": {
+    "message": "Sieht Hermes, wenn mehrere Browser am Relay hängen (z. B. Desktop, Laptop)."
   }
 }
