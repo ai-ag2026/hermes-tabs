@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes 說：$TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes 請求授權"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "中繼伺服器的存取權杖（HERMES_TABS_TOKEN）。"
+  },
+  "overlayFull": {
+    "message": "完整權限"
+  },
+  "overlayPasswords": {
+    "message": "可以輸入密碼"
+  },
+  "looseTitle": {
+    "message": "允許 Hermes 做更多？"
+  },
+  "looseText": {
+    "message": "一項設定變更想要允許：$LIST$。僅當這是你自己做的變更（例如在 Hermes 設定中）時才確認。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "允許"
+  },
+  "looseDecline": {
+    "message": "拒絕"
+  },
+  "looseEnabled": {
+    "message": "在瀏覽器中啟用 Hermes"
+  },
+  "looseUnblock": {
+    "message": "取消封鎖 $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "安全"
+  },
+  "optSafetyHelp": {
+    "message": "Hermes 在其分頁中可以做什麼。單獨變更某個開關即為自訂設定。"
+  },
+  "tier_read": {
+    "message": "唯讀"
+  },
+  "tier_read_desc": {
+    "message": "在自己的和共用的分頁中讀取、尋找、擷取畫面和捲動。不能點擊、輸入、執行指令碼或開啟頁面。"
+  },
+  "tier_standard": {
+    "message": "標準"
+  },
+  "tier_standard_desc": {
+    "message": "點擊、輸入、開啟頁面、執行指令碼、上傳。不能輸入密碼；在未授權的網站上指令碼只能讀取。"
+  },
+  "tier_extended": {
+    "message": "擴充"
+  },
+  "tier_extended_desc": {
+    "message": "與標準相同，另外：指令碼可在任何地方變更內容、可在其他網站的嵌入框架中輸入、可關閉共用的分頁。"
+  },
+  "tier_full": {
+    "message": "完整權限"
+  },
+  "tier_full_desc": {
+    "message": "所有操作，包括輸入密碼，且不再依網站詢問。"
+  },
+  "tier_custom": {
+    "message": "自訂"
+  },
+  "tier_custom_desc": {
+    "message": "你自己組合的下列開關。"
+  },
+  "safety_act": {
+    "message": "點擊和輸入"
+  },
+  "safety_act_desc": {
+    "message": "點擊、輸入、按鍵、表單欄位、確認對話方塊。"
+  },
+  "safety_js": {
+    "message": "執行指令碼"
+  },
+  "safety_js_desc": {
+    "message": "javascript 工具。"
+  },
+  "safety_navigate": {
+    "message": "開啟頁面"
+  },
+  "safety_navigate_desc": {
+    "message": "開啟新分頁並載入網址。"
+  },
+  "safety_upload": {
+    "message": "上傳檔案"
+  },
+  "safety_upload_desc": {
+    "message": "將檔案和螢幕擷取畫面放入檔案欄位。"
+  },
+  "safety_download": {
+    "message": "下載"
+  },
+  "safety_download_desc": {
+    "message": "將錄製內容（GIF）儲存到下載資料夾。"
+  },
+  "safety_devtools": {
+    "message": "主控台和網路"
+  },
+  "safety_devtools_desc": {
+    "message": "讀取主控台訊息和網路要求。"
+  },
+  "safety_scriptWrites": {
+    "message": "指令碼可在任何地方變更內容"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "關閉時：在未授權的網站上，指令碼只能讀取（不能傳送，不能彈出視窗）。"
+  },
+  "safety_frameTyping": {
+    "message": "在嵌入框架中輸入"
+  },
+  "safety_frameTyping_desc": {
+    "message": "在其他網站的框架中輸入，通常是登入和付款元件。"
+  },
+  "safety_passwords": {
+    "message": "輸入密碼"
+  },
+  "safety_passwords_desc": {
+    "message": "在密碼欄位中輸入。Hermes 將能夠輸入聊天或其內容脈絡中的登入憑證。"
+  },
+  "safety_closeShared": {
+    "message": "關閉共用的分頁"
+  },
+  "safety_closeShared_desc": {
+    "message": "也關閉你共用的分頁，而不僅是它自己的。"
+  },
+  "warnLoosen": {
+    "message": "Hermes 將獲得更多權限：$LIST$。是否繼續？",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意：Hermes 將能夠輸入聊天或其內容脈絡中的登入憑證，例如你告訴它的密碼或它在某處讀到的密碼。僅當你希望 Hermes 替你登入時才啟用此項。"
+  },
+  "tamperTitle": {
+    "message": "頁面正在隱藏 Hermes 的提示層"
+  },
+  "tamperText": {
+    "message": "$HOST$ 不斷移除 Hermes 的提示層，你可能看不到 Hermes 在分頁中的操作。如有疑慮，請透過工具列圖示停止。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

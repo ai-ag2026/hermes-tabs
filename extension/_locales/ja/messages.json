@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes のメッセージ: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes が許可を求めています"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "リレーのアクセス トークンです (HERMES_TABS_TOKEN)。"
+  },
+  "overlayFull": {
+    "message": "フル権限"
+  },
+  "overlayPasswords": {
+    "message": "パスワードを入力できます"
+  },
+  "looseTitle": {
+    "message": "Hermes にさらに許可しますか?"
+  },
+  "looseText": {
+    "message": "設定の変更で次の許可が求められています: $LIST$。ご自身で行った変更 (Hermes の設定など) の場合のみ承認してください。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "許可"
+  },
+  "looseDecline": {
+    "message": "拒否"
+  },
+  "looseEnabled": {
+    "message": "ブラウザーで Hermes をオンにする"
+  },
+  "looseUnblock": {
+    "message": "$DOMAIN$ のブロックを解除",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "セキュリティ"
+  },
+  "optSafetyHelp": {
+    "message": "Hermes が自分のタブでできること。スイッチを個別に変更するとカスタム設定になります。"
+  },
+  "tier_read": {
+    "message": "読み取りのみ"
+  },
+  "tier_read_desc": {
+    "message": "自分のタブと共有されたタブで、読み取り、検索、スクリーンショット、スクロールができます。クリック、入力、スクリプト、ページを開くことはできません。"
+  },
+  "tier_standard": {
+    "message": "標準"
+  },
+  "tier_standard_desc": {
+    "message": "クリック、入力、ページを開く、スクリプト、アップロード。パスワードは不可。許可のないサイトではスクリプトは読み取りのみ。"
+  },
+  "tier_extended": {
+    "message": "拡張"
+  },
+  "tier_extended_desc": {
+    "message": "標準に加えて: スクリプトはどこでも変更可能、他サイトの埋め込みフレームへの入力、共有タブを閉じる。"
+  },
+  "tier_full": {
+    "message": "フル権限"
+  },
+  "tier_full_desc": {
+    "message": "パスワードの入力を含むすべて。サイトごとの確認もありません。"
+  },
+  "tier_custom": {
+    "message": "カスタム"
+  },
+  "tier_custom_desc": {
+    "message": "下のスイッチの独自の組み合わせ。"
+  },
+  "safety_act": {
+    "message": "クリックと入力"
+  },
+  "safety_act_desc": {
+    "message": "クリック、入力、キー操作、フォーム欄、ダイアログの承認。"
+  },
+  "safety_js": {
+    "message": "スクリプトの実行"
+  },
+  "safety_js_desc": {
+    "message": "javascript ツール。"
+  },
+  "safety_navigate": {
+    "message": "ページを開く"
+  },
+  "safety_navigate_desc": {
+    "message": "新しいタブを開き、アドレスを読み込みます。"
+  },
+  "safety_upload": {
+    "message": "ファイルのアップロード"
+  },
+  "safety_upload_desc": {
+    "message": "ファイルやスクリーンショットをファイル欄に入れます。"
+  },
+  "safety_download": {
+    "message": "ダウンロード"
+  },
+  "safety_download_desc": {
+    "message": "録画 (GIF) をダウンロード フォルダーに保存します。"
+  },
+  "safety_devtools": {
+    "message": "コンソールとネットワーク"
+  },
+  "safety_devtools_desc": {
+    "message": "コンソール メッセージとネットワーク リクエストを読み取ります。"
+  },
+  "safety_scriptWrites": {
+    "message": "スクリプトはどこでも変更可能"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "オフ: 許可のないサイトではスクリプトは読み取りのみ (送信やポップアップは不可)。"
+  },
+  "safety_frameTyping": {
+    "message": "埋め込みフレームへの入力"
+  },
+  "safety_frameTyping_desc": {
+    "message": "他サイトのフレームへの入力。多くはログインや決済のウィジェットです。"
+  },
+  "safety_passwords": {
+    "message": "パスワードの入力"
+  },
+  "safety_passwords_desc": {
+    "message": "パスワード欄への入力。Hermes はチャットやコンテキストにある認証情報を入力できるようになります。"
+  },
+  "safety_closeShared": {
+    "message": "共有タブを閉じる"
+  },
+  "safety_closeShared_desc": {
+    "message": "自分のタブだけでなく、あなたが共有したタブも閉じます。"
+  },
+  "warnLoosen": {
+    "message": "Hermes の権限が増えます: $LIST$。続行しますか?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意: Hermes はチャットやコンテキストにある認証情報を入力できるようになります。たとえば、あなたが伝えたパスワードや、どこかで読み取ったパスワードです。Hermes に代わりにログインさせたい場合にのみオンにしてください。"
+  },
+  "tamperTitle": {
+    "message": "ページが Hermes の表示を隠しています"
+  },
+  "tamperText": {
+    "message": "$HOST$ が Hermes の表示を繰り返し削除しています。タブ内で Hermes が何をしているか見えない可能性があります。不安な場合はツールバーのアイコンで停止してください。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes says: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes requests permission"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "Access token of the relay (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "Full rights"
+  },
+  "overlayPasswords": {
+    "message": "May enter passwords"
+  },
+  "looseTitle": {
+    "message": "Allow Hermes more?"
+  },
+  "looseText": {
+    "message": "A settings change wants to allow: $LIST$. Confirm only if you made this change yourself (e.g. in the Hermes settings).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "Allow"
+  },
+  "looseDecline": {
+    "message": "Decline"
+  },
+  "looseEnabled": {
+    "message": "Turn on Hermes in the browser"
+  },
+  "looseUnblock": {
+    "message": "Unblock $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "Safety"
+  },
+  "optSafetyHelp": {
+    "message": "How much Hermes may do in its tabs. Changing a single switch makes it a custom setting."
+  },
+  "tier_read": {
+    "message": "Read only"
+  },
+  "tier_read_desc": {
+    "message": "Read, find, take screenshots and scroll in its own and shared tabs. No clicking, typing, scripts or opening pages."
+  },
+  "tier_standard": {
+    "message": "Standard"
+  },
+  "tier_standard_desc": {
+    "message": "Click, type, open pages, run scripts, upload. No passwords; scripts only read on websites without approval."
+  },
+  "tier_extended": {
+    "message": "Extended"
+  },
+  "tier_extended_desc": {
+    "message": "Like Standard, plus: scripts may change things everywhere, typing in embedded frames of other websites, closing shared tabs."
+  },
+  "tier_full": {
+    "message": "Full rights"
+  },
+  "tier_full_desc": {
+    "message": "Everything, including entering passwords, and no question per website."
+  },
+  "tier_custom": {
+    "message": "Custom"
+  },
+  "tier_custom_desc": {
+    "message": "Your own combination of the switches below."
+  },
+  "safety_act": {
+    "message": "Click and type"
+  },
+  "safety_act_desc": {
+    "message": "Clicks, typing, keys, form fields, confirming dialogs."
+  },
+  "safety_js": {
+    "message": "Run scripts"
+  },
+  "safety_js_desc": {
+    "message": "The javascript tool."
+  },
+  "safety_navigate": {
+    "message": "Open pages"
+  },
+  "safety_navigate_desc": {
+    "message": "Open new tabs and load addresses."
+  },
+  "safety_upload": {
+    "message": "Upload files"
+  },
+  "safety_upload_desc": {
+    "message": "Put files and screenshots into file fields."
+  },
+  "safety_download": {
+    "message": "Downloads"
+  },
+  "safety_download_desc": {
+    "message": "Save recordings (GIF) to the download folder."
+  },
+  "safety_devtools": {
+    "message": "Console and network"
+  },
+  "safety_devtools_desc": {
+    "message": "Read console messages and network requests."
+  },
+  "safety_scriptWrites": {
+    "message": "Scripts may change things everywhere"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "Off: on websites without approval, scripts can only read (no sending, no popups)."
+  },
+  "safety_frameTyping": {
+    "message": "Type in embedded frames"
+  },
+  "safety_frameTyping_desc": {
+    "message": "Typing into frames of other websites, often sign-in and payment widgets."
+  },
+  "safety_passwords": {
+    "message": "Enter passwords"
+  },
+  "safety_passwords_desc": {
+    "message": "Typing into password fields. Hermes can then enter credentials that are in the chat or its context."
+  },
+  "safety_closeShared": {
+    "message": "Close shared tabs"
+  },
+  "safety_closeShared_desc": {
+    "message": "Also close tabs you shared, not only its own."
+  },
+  "warnLoosen": {
+    "message": "Hermes gets more rights: $LIST$. Continue?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Caution: Hermes can then enter credentials that are in the chat or its context – for example passwords you told it or that it read somewhere. Turn this on only if Hermes should sign in for you."
+  },
+  "tamperTitle": {
+    "message": "The page is hiding the Hermes overlay"
+  },
+  "tamperText": {
+    "message": "$HOST$ keeps removing the Hermes overlay, so you may not see what Hermes does in the tab. If in doubt, stop it with the toolbar icon.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

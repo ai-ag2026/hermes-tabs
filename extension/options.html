@@ -8,17 +8,18 @@
     --bg: #f8f9fe; --surface: #fdfdfd; --text: #242528; --text-2: #515255; --text-3: #7e7f83;
     --stroke: #d5dff4; --stroke-strong: #c3d1f0; --accent: #0053fd; --on-accent: #fff;
     --ctl: #e8edf6; --ctl-hover: #d9e2f3; --row-hover: #f1f4fb;
-    --radius: 3px; --radius-card: 5px;
+    --danger: #cf2d56; --radius: 3px; --radius-card: 5px;
     font: 13px/1.45 "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0d1015; --surface: #16181c; --text: #d9e0e6; --text-2: #aeb4b9; --text-3: #82878d;
       --stroke: #252c3c; --stroke-strong: #2b364d; --accent: #4a84fe; --on-accent: #161616;
-      --ctl: #242a38; --ctl-hover: #303b52; --row-hover: #1e222b;
+      --ctl: #242a38; --ctl-hover: #303b52; --row-hover: #1e222b; --danger: #f0587e;
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--bg); color: var(--text); }
   main { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem 3rem; }
   header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.5rem; }
@@ -54,6 +55,9 @@
   li span { overflow-wrap: anywhere; }
   li.none { color: var(--text-3); }
   .add { display: flex; gap: .375rem; margin-top: .5rem; }
+  .card + .card { margin-top: .5rem; }
+  .card.warn { border-color: var(--danger); }
+  .row.warn .desc { color: var(--danger); }
   /* Switch: a checkbox drawn as a pill */
   .switch { appearance: none; flex: none; width: 32px; height: 18px; margin: 0; border-radius: 9px; background: var(--stroke-strong);
             position: relative; cursor: pointer; transition: background .15s; }
@@ -73,6 +77,12 @@
     <h1>Hermes Tabs</h1><span id="version"></span>
   </header>
 
+  <!-- A loosening change from the relay waits for confirmation (also for systems without notification buttons) -->
+  <section id="pending" hidden>
+    <div class="card warn"><div class="row"><div><div class="title" data-i18n="looseTitle"></div><div class="desc" id="pendingText"></div></div>
+      <div class="ctl"><button id="pendingNo" data-i18n="looseDecline"></button><button id="pendingYes" class="primary" data-i18n="looseConfirm"></button></div></div></div>
+  </section>
+
   <section>
     <h2 data-i18n="optConnectionHeading"></h2>
     <div class="card">
@@ -91,6 +101,12 @@
     <div class="card">
       <label class="row"><div class="title" data-i18n="optEnabled"></div><input type="checkbox" id="enabled" class="switch"></label>
     </div>
+  </section>
+
+  <section>
+    <h2 data-i18n="optSafetyHeading"></h2>
+    <div class="card" id="tiers"><div class="row"><div class="desc" data-i18n="optSafetyHelp"></div></div></div>
+    <div class="card" id="switches"></div>
   </section>
 
   <section>
@@ -114,4 +130,5 @@
     </div>
   </section>
 </main>
+<script src="safety.js"></script>
 <script src="options.js"></script>

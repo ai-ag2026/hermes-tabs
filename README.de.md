@@ -6,7 +6,7 @@ Ein KI-Agent bedient einzelne Tabs in **deinem echten, angemeldeten Browser**, s
 
 hermes-tabs besteht aus einer Chromium-Erweiterung (Manifest V3, auf Basis von `chrome.debugger`), einem kleinen Relay-Server, der MCP spricht, und einem optionalen Plugin für den Hermes-Agenten. Jeder MCP-Client kann das Relay nutzen. Der Agent klickt, tippt, scrollt, liest Seiten und macht Screenshots in Tabs, die du ihm freigibst oder die er selbst öffnet, mit deinen bestehenden Logins, während du zusiehst.
 
-Gedacht ist es für alle, die einen Agenten Websites nutzen lassen wollen, die keine API haben oder hinter einem Login liegen, ohne ihm ein getrenntes Browserprofil oder Zugangsdaten zu geben, und die sehen und stoppen wollen, was er tut.
+Gedacht ist es für alle, die einen Agenten Websites nutzen lassen wollen, die keine API haben oder hinter einem Login liegen, ohne ihm ein getrenntes Browserprofil oder Zugangsdaten zu geben (Tippen in Passwortfelder ist standardmäßig gesperrt), und die sehen und stoppen wollen, was er tut.
 
 **Vertrauter Werkzeugsatz.** Die Werkzeuge sind den Browser-Werkzeugen von Anthropics Erweiterung *Claude in Chrome* nachgebildet: weitgehend dieselben Namen (ohne die Endung `_mcp`), dieselben Parameter und derselbe Ablauf mit `ref_N`, sodass Prompts und Gewohnheiten übertragbar sind. hermes-tabs ist eine eigenständige Umsetzung auf Grundlage der veröffentlichten Werkzeugbeschreibungen und von Blackbox-Tests. Es enthält keinen Code aus Claude in Chrome und steht in keiner Verbindung zu Anthropic, das es auch nicht unterstützt oder empfiehlt.
 
@@ -106,7 +106,7 @@ Zum optionalen Hermes-Plugin (Einstellungsseite, zusätzliche Leitplanken) siehe
 | Variable | Bedeutung |
 |---|---|
 | `HERMES_TABS_TOKEN` | Pflicht. Bearer-Token für `/mcp` und für die WebSocket-Verbindung der Extension. |
-| `HERMES_TABS_ADMIN_TOKEN` | Optional. Eigener Token, nur für `/admin/settings` und `/admin/select`. Ohne ihn lassen sich Einstellungen nicht über das Relay ändern. Dem Agenten nicht geben, damit er sich keine Rechte verschaffen kann. |
+| `HERMES_TABS_ADMIN_TOKEN` | Optional. Eigener Token, nur für `/admin/settings`, `/admin/select` und `/admin/reload` (die Extension lädt nach einem Update ihre Dateien neu: `curl -X POST -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" http://127.0.0.1:8766/admin/reload`). Ohne ihn lassen sich Einstellungen nicht über das Relay ändern. Dem Agenten möglichst nicht geben. Das Hermes-Plugin braucht ihn in der Umgebung des Agenten, daher muss Lockern darüber im Browser bestätigt werden (siehe [Schutzregeln](#schutzregeln)). |
 | `HERMES_TABS_HOST` | Lauschadresse. Vorgabe `127.0.0.1`. |
 | `HERMES_TABS_PORT` | Port. Vorgabe `8766`. |
 | `HERMES_TABS_GIF_DIR` | Ordner für exportierte GIFs, Vorgabe `~/.cache/hermes-tabs`. Er muss dem Relay-Benutzer gehören und darf für andere nicht beschreibbar sein. |
@@ -125,7 +125,7 @@ Zum optionalen Hermes-Plugin (Einstellungsseite, zusätzliche Leitplanken) siehe
 | `navigate` | URL aufrufen, `back` / `forward` |
 | `read_page` | Baum mit `ref_N`-Handles; `filter="interactive"`, `ref_id`, `depth`, `max_chars` |
 | `find` | Elemente nach Zweck oder Text finden (Wortabgleich; versteht englische und deutsche Wörter wie „search field“ / „Suchfeld“) |
-| `form_input` | Feld, Checkbox oder Auswahlliste per Ref setzen |
+| `form_input` | Feld, Checkbox oder Auswahlliste per Ref setzen (Passwortfelder nur, wenn erlaubt) |
 | `computer` | `left_click`, `right_click`, `double_click`, `triple_click`, `hover`, `left_click_drag`, `type`, `key` (mit `repeat`), `scroll`, `scroll_to`, `screenshot`, `zoom`, `wait` |
 | `get_page_text` | Seitentext, Hauptinhalt bevorzugt |
 | `javascript` | JavaScript in der Seite (REPL-Stil, `await` geht) |
@@ -142,7 +142,8 @@ Gut zu wissen:
 - `read_page` durchläuft auch offene Shadow-DOMs und iframes derselben Herkunft.
 - Screenshots kommen in CSS-Pixeln. Klick-Koordinaten stimmen damit auch bei Bildschirmskalierung und Browserzoom.
 - Dialoge blockieren nicht: Der Befehl meldet den Dialog, `handle_dialog` beantwortet ihn.
-- Der Agent bedient nur `http(s)`-Seiten (dazu `data:` und `about:blank`), nie lokale Dateien oder Browser- und Extension-Seiten.
+- Der Agent bedient nur `http(s)`-Seiten (dazu `data:` und `about:blank`), nie lokale Dateien oder Browser- und Extension-Seiten. Auf `data:` und `about:blank` liest er nur und handelt nicht; Skripte können dort nur lesen.
+- Welche Werkzeuge funktionieren, hängt von der [Sicherheitsstufe](#schutzregeln) ab; ein ausgeschaltetes Werkzeug antwortet mit einer klaren Meldung.
 
 ## Sichtbarkeit und Stopp
 
@@ -153,7 +154,9 @@ Solange der Agent in einem Tab arbeitet:
 - Unten steht eine Leiste „Hermes steuert diesen Tab“ mit einem **Stopp**-Knopf.
 - Nach 6 s Ruhe verschwindet alles. Screenshots, die der Agent erhält, enthalten das Overlay nicht.
 
-**Stopp** entzieht dem Tab die Freigabe, nimmt ihn aus der Tab-Gruppe „Hermes“ und trennt den Debugger. Während der Agent klickt, lässt das Overlay Klicks durch, damit er weder Stopp noch eine Freigabe-Taste treffen kann. Die Knöpfe reagieren nur auf echte Nutzerklicks, und die Seite sieht das Overlay nicht.
+**Stopp** entzieht dem Tab die Freigabe, nimmt ihn aus der Tab-Gruppe „Hermes“ und trennt den Debugger. Während der Agent klickt, lässt das Overlay Klicks durch, damit er weder Stopp noch eine Freigabe-Taste treffen kann. Die Knöpfe reagieren nur auf echte Nutzerklicks: Die Seite kann sie nicht auslösen und keine Freigabe fälschen.
+
+Die Seite kann das Overlay erkennen, solange es angezeigt wird, und versuchen, es zu entfernen oder zu verstecken. Die Extension stellt es wieder her; macht die Seite damit weiter, hört die Extension mit dem Gegenhalten auf, markiert das Symbol des Tabs mit „!“, zeigt eine Desktop-Benachrichtigung und warnt den Agenten in jeder Antwort, bis die Seite verlassen wird. Für Freigaben ist die Desktop-Benachrichtigung der zweite Kanal, an den die Seite nicht herankommt.
 
 Der Browser selbst zeigt auf gesteuerten Tabs außerdem seinen Hinweis „wird debuggt“. Das lässt sich nicht abschalten.
 
@@ -163,11 +166,13 @@ Der Browser selbst zeigt auf gesteuerten Tabs außerdem seinen Hinweis „wird d
 - Tabs, die du per Klick aufs Symbol der Extension freigibst (Badge mit Haken; ein zweiter Klick entzieht die Freigabe).
 - Tabs, die ein Agent-Tab öffnet (z. B. Links mit `target=_blank`), gehören ebenfalls dem Agenten.
 
+Nach einem Neuladen der Extension oder einem Browser-Neustart werden Tabs in einer Tab-Gruppe namens „Hermes“ wieder als eigene Tabs des Agenten übernommen (eine eigene Gruppe mit diesem Namen zählt also als Agenten-Tabs).
+
 Freigaben gelten bis zum Neustart des Browsers. Die Grenze liegt beim Tab, nicht beim Konto: In einem freigegebenen Tab hat der Agent deine Logins auf dieser Seite.
 
 ## Freigaben pro Website
 
-Lesen ist in freigegebenen Tabs frei. **Handeln** braucht deine Zustimmung für die Website: Klicken, Tippen, Tasten, `form_input`, Uploads und das Bestätigen von Dialogen. Die Frage erscheint im Tab und als Desktop-Benachrichtigung. Wegklicken heißt Nein; nach 50 s ohne Antwort lehnt die Extension ab. Tabs, die du selbst freigegeben hast, gelten als zugestimmt.
+Lesen ist in freigegebenen Tabs frei. **Handeln** braucht deine Zustimmung für die Website: Klicken, Tippen, Tasten, `form_input`, Uploads und das Bestätigen von Dialogen. Die Frage erscheint im Tab und als Desktop-Benachrichtigung. Wegklicken heißt Nein; nach 50 s ohne Antwort lehnt die Extension ab. Tabs, die du selbst freigegeben hast, gelten als zugestimmt für die Website, die sie beim Freigeben zeigten (auch für andere Seiten dieser Website). Bringt der Agent einen solchen Tab auf eine andere Website, fragt er dort wie üblich; der Tab bleibt freigegeben, Lesen geht weiter. Die Frage zeigt die eigene Beschreibung des Agenten in einer eigenen Zeile („Hermes sagt: …“, höchstens 120 Zeichen). Die Stufe `full` überspringt die Frage; in den Stufen ohne die Fähigkeit `act` handelt der Agent gar nicht (siehe [Schutzregeln](#schutzregeln)).
 
 Freigabe-Stufen:
 
@@ -182,7 +187,7 @@ Freigabe-Stufen:
 
 Im Tab stehen fünf Knöpfe zur Wahl, in der Desktop-Benachrichtigung zwei („Diese Website bis Neustart“ und „Alle Websites 1 Stunde“). In den Optionen der Extension lassen sich Zeitfenster starten und beenden und Websites widerrufen.
 
-**Gesamtschalter und blockierte Seiten.** Die Optionsseite hat einen Gesamtschalter: Ist er aus, kann der Agent im Browser gar nichts tun. Blockierte Seiten sind Domains (Subdomains eingeschlossen), auf denen der Agent nicht einmal lesen darf. Geprüft wird gegen die echte Tab-URL, auch nach Weiterleitungen, und vor dem Öffnen oder Navigieren.
+**Gesamtschalter und blockierte Seiten.** Die Optionsseite hat einen Gesamtschalter: Ist er aus, kann der Agent im Browser gar nichts tun. Ihn wieder einzuschalten und eine blockierte Seite zu entfernen muss im Browser bestätigt werden (siehe [Schutzregeln](#lockern-braucht-deine-bestätigung)). Blockierte Seiten sind Domains (Subdomains eingeschlossen), auf denen der Agent nicht einmal lesen darf. Geprüft wird gegen die echte Tab-URL, auch nach Weiterleitungen, und vor dem Öffnen oder Navigieren.
 
 **Einstellungen übers Relay.** `GET/POST /admin/settings` mit `HERMES_TABS_ADMIN_TOKEN`:
 
@@ -191,26 +196,82 @@ curl -H "Authorization: Bearer $HERMES_TABS_ADMIN_TOKEN" -H "Content-Type: appli
      -d '{"allowAll": "8h"}' http://127.0.0.1:8766/admin/settings
 # {"allowAll": "off"}   {"sites": {"https://example.com": "always"}}   {"siteMode": "ask"}
 # {"enabled": false}    {"blockedSites": ["bank.example"]}
+# {"safety": {"tier": "read"}}    {"safety": {"passwords": false}}
 ```
+
+`GET` liefert auch `safety`: die Stufe `tier` (`read`, `standard`, `extended`, `full` oder `custom`) und die zehn Schalter aus den [Schutzregeln](#einzelschalter). Eine Extension ohne `safety` verhält sich wie `standard`. `POST` mit `{"safety": {...}}` setzt eine Stufe oder einzelne Schalter. Verschärfen gilt sofort; jedes Lockern (auch `siteMode: "all"`, `allowAll`, `sites` auf `always`/`session`, `enabled: true`, Entfernen blockierter Seiten) wartet im Browser auf die Bestätigung des Menschen, bis zu 120 s. Die Antwort (Status 200, nach bis zu etwa 2 Minuten) enthält die jetzt geltenden Einstellungen sowie `confirmation` (`not_needed`, `confirmed`, `declined` oder `expired`) und `loosening`, die Liste der erfragten Lockerungen. Es wartet immer nur eine Bestätigung; eine zweite Lockerung bekommt solange 409.
 
 Hängen mehrere Browser am Relay, spricht `?device=<deviceId>` einen davon an (ohne: den Browser, den der Agent verwendet). Die Antwort nennt den Browser (`browser`) und listet alle verbundenen (`browsers`). `POST /admin/select` mit `{"deviceId": "..."}` wählt den Browser für den Agenten.
 
-## Schutzmechanismen
+## Schutzregeln
 
-- **Nur freigegebene oder selbst geöffnete Tabs.** Jedes Werkzeug, das einen Tab anfasst, prüft das zuerst. Schließen darf der Agent nur seine eigenen Tabs.
-- **Keine Zugangsdaten.** Der Agent tippt nie in Passwortfelder (auch nicht in Felder mit `autocomplete=...password`, und nicht per Strg+V oder Enter), und Tippen in iframes fremder Websites wird abgelehnt (Anmelde- und Zahlungs-Widgets).
-- **Skripte nur lesend auf nicht freigegebenen Seiten.** Läuft `javascript` auf einer Website ohne Freigabe, blockiert die Extension ab diesem Aufruf bis zur nächsten Navigation alle Nicht-GET-Anfragen (POST, PUT, DELETE ...), auch nachgeschobene und aus Web Workern. Popups werden blockiert. Ändern geht nur sichtbar über `computer` und `form_input`.
+Wie weit der Agent gehen darf, legt eine **Sicherheitsstufe** fest. Jede Stufe ist eine Voreinstellung einzelner Schalter; Stufe oder Einzelschalter stellst du in den Optionen der Extension ein, mit dem Hermes-Plugin auch in den Hermes-Einstellungen.
+
+### Sicherheitsstufen
+
+| Stufe | Was der Agent darf |
+|---|---|
+| `read` | Nur lesen: Seiteninhalt, Screenshots, Konsole und Netzwerkprotokoll. Kein Klicken oder Tippen, keine Skripte, kein Öffnen von Seiten, keine Uploads oder Downloads. |
+| `standard` (Vorgabe) | Alle Fähigkeiten; jede Website braucht deine Freigabe vor der ersten Handlung. Alle Lockerungen aus. So verhält sich alles, was im übrigen README beschrieben ist. |
+| `extended` | `standard` plus: Skripte dürfen auf nicht freigegebenen Seiten schreiben und Popups öffnen, Tippen in iframes fremder Websites, auch von dir freigegebene Tabs schließen. |
+| `full` | Alles, auch in Passwortfelder tippen, und keine Rückfrage je Website. Nur für Aufgaben, denen du voll vertraust. |
+| `custom` | Wird angezeigt, wenn Einzelschalter von jeder Stufe oben abweichen. |
+
+### Einzelschalter
+
+Fähigkeiten (an = erlaubt):
+
+| Schalter | Umfasst |
+|---|---|
+| `act` | Klicken, Tippen, Tasten, `form_input`, Dialoge bestätigen |
+| `js` | Das Werkzeug `javascript` |
+| `navigate` | Tabs öffnen und Seiten laden |
+| `upload` | `file_upload`, `upload_image` |
+| `download` | Ein GIF im Download-Ordner des Browsers speichern (`gif_creator` mit `download=true`). Aufnahme und Export auf dem Relay-Rechner betrifft der Schalter nicht. |
+| `devtools` | `read_console_messages`, `read_network_requests` |
+
+Lockerungen (an = der Schutz ist aufgehoben; Vorgabe überall aus):
+
+| Schalter | Hebt auf |
+|---|---|
+| `scriptWrites` | Den Schreibschutz von `javascript` auf nicht freigegebenen Seiten: Nicht-GET-Anfragen und Popups sind dann erlaubt |
+| `frameTyping` | Das Verbot, in iframes fremder Websites zu tippen (Anmelde- und Zahlungs-Widgets) |
+| `passwords` | Das Verbot, in Passwortfelder zu tippen, siehe [Passwörter](#passwörter) |
+| `closeShared` | Die Grenze, dass `tabs_close` nur eigene Tabs des Agenten schließt: dann auch von dir freigegebene Tabs |
+
+### Immer fest
+
+Das gilt in jeder Stufe:
+
+- **Nur freigegebene oder selbst geöffnete Tabs.** Jedes Werkzeug, das einen Tab anfasst, prüft das zuerst.
 - **Geschützte Seiten.** `file:`, `chrome:`, `chrome-extension:` und ähnliche URLs werden abgelehnt. Sonst könnte der Agent die Extension-APIs erreichen oder lokale Dateien lesen.
+- **Sichtbar und stoppbar.** Rahmen, Zeiger, Beschriftung und eine Leiste mit **Stopp** zeigen, was im Tab geschieht (siehe [Sichtbarkeit und Stopp](#sichtbarkeit-und-stopp)). Die Knöpfe reagieren nur auf echte Nutzerklicks; die Seite kann sie nicht auslösen, und versteckt sie die Einblendung hartnäckig, erfahren du und der Agent davon.
 - **Seitenskripte sind isoliert.** `read_page`, `find` und `form_input` laufen in einer isolierten Welt, die Seite kann sie nicht manipulieren.
 - **Uploads sind eingegrenzt.** `file_upload` liest nur unterhalb der konfigurierten Upload-Ordner, nur normale Dateien, mit 10 MB Gesamtgrenze.
-- **Protokoll.** Das Relay schreibt jeden Browser-Aufruf nach stdout/Journal: Werkzeug und Parameter, jede Zeichenkette auf 80 Zeichen gekürzt. Getippter Text, `form_input`-Werte und Skript-Quelltext erscheinen also gekürzt; Dateiinhalte und Bilder nie.
+- **Protokoll.** Das Relay schreibt jeden Browser-Aufruf nach stdout/Journal: Werkzeug und Parameter, jede Zeichenkette auf 80 Zeichen gekürzt. Getippter Text, `form_input`-Werte und Skript-Quelltext erscheinen also gekürzt; Dateiinhalte und Bilder nie. In Passwortfelder getippter Text wird geschwärzt, ein Passwort im Quelltext eines Skripts aber nicht (siehe [Passwörter](#passwörter)).
+- **Gesamtschalter und blockierte Seiten.** Bei ausgeschaltetem Gesamtschalter und auf blockierten Seiten kann der Agent nichts tun, egal in welcher Stufe.
 - **Seiteninhalt ist Daten, kein Auftrag.** Die MCP-Hinweise des Relays weisen den Agenten an, Text auf Webseiten so zu behandeln. Das ist eine Anweisung ans Modell, keine technische Garantie.
+
+### Lockern braucht deine Bestätigung
+
+Verschärfen (strengere Stufe, Fähigkeit oder Lockerung ausschalten) gilt sofort. **Lockern** (großzügigere Stufe, Fähigkeit oder Lockerung einschalten, „alle Websites“, Zeitfenster, eine Website freigeben, den Gesamtschalter wieder einschalten, eine blockierte Seite entfernen) muss ein Mensch im Browser bestätigen: Die Extension stellt eine Frage, und die Änderung gilt erst, wenn du zustimmst. Das gilt auch, wenn die Änderung über die Admin-Schnittstelle des Relays kommt (etwa von der Hermes-Einstellungsseite); das Relay wartet bis zu 120 s auf deine Antwort und lässt sonst alles, wie es war.
+
+Der Grund: Das Hermes-Plugin braucht den Admin-Token in der Umgebung des Agenten-Prozesses, also darf der Token allein nicht genügen, um Grenzen aufzuheben. Ein Agent, der den Token lesen kann, kann damit trotzdem nichts lockern. Änderungen, die du direkt auf der Optionsseite der Extension machst, sind deine eigene Entscheidung.
+
+### Passwörter
+
+Passwortfelder sind standardmäßig gesperrt: Der Agent tippt nie hinein (auch nicht in Felder mit `autocomplete=...password`, und nicht per Einfüge-Tasten wie Strg+V, Cmd+V oder Umschalt+Einfg, oder Enter). Tasten, die den Fokus in ein Passwortfeld bewegen, beenden die Tastenfolge dort. Pfeil- und Bildtasten in einem Anmeldefeld werden ebenfalls abgelehnt, weil sie einen im Browser gespeicherten Login auswählen könnten (Autofill). Mit der Stufe `full` oder dem Schalter `passwords` erlaubst du es. **Dann kann der Agent beliebige Zugangsdaten eingeben, die er kennt** (etwa aus deinen Anweisungen oder von der Seite) und sich als du anmelden. Schalte es nur für die Aufgabe ein, die es braucht, und danach wieder aus. So eingegebene Passwörter werden im Log des Relays geschwärzt. Die Hermes-Einstellungsseite zeigt eine rote Warnung, solange es an ist.
+
+Grenzen des Schalters:
+
+- Er gilt für `type`, `key` und `form_input`. Auf einer Website, die du freigegeben hast, kann ein `javascript`-Aufruf trotzdem ein Passwortfeld füllen und das Formular absenden. Die MCP-Anweisungen des Relays verbieten das, technisch verhindert ist es nicht, und der Skript-Quelltext (die ersten 80 Zeichen) enthielte das Passwort dann im Log des Relays.
+- Die eigenen Autofill-Popups des Browsers hat die Extension nicht vollständig im Griff.
 
 ## Hermes-Plugin
 
 `hermes-plugin/` ergänzt für den Hermes-Agenten eine Einstellungsseite und einige zusätzliche Leitplanken. Die Einstellungen gehören der Extension; das Plugin liest und schreibt sie über `/admin/settings` (und wählt den Browser über `/admin/select`), durchgesetzt wird weiterhin in der Extension.
 
-Einstellungsseite: in welchem Browser Hermes arbeitet (bei mehreren Browsern am Relay: die Einstellungen jedes Browsers ansehen und den für Hermes wählen), Gesamtschalter, Standard für alle Websites (fragen oder alle erlauben), vorübergehendes „alle erlauben“, erlaubte Seiten, blockierte Seiten.
+Einstellungsseite: in welchem Browser Hermes arbeitet (bei mehreren Browsern am Relay: die Einstellungen jedes Browsers ansehen und den für Hermes wählen), Gesamtschalter, Sicherheitsstufe und Einzelschalter (Verschärfen gilt sofort, Lockern zeigt „Bitte im Browser bestätigen …“, bis du dort antwortest; eine rote Warnung erscheint, solange Hermes Passwörter eingeben darf), Standard für alle Websites (fragen oder alle erlauben), vorübergehendes „alle erlauben“, erlaubte Seiten, blockierte Seiten.
 
 Der `pre_tool_call`-Hook des Plugins ergänzt das Folgende. Er erkennt die Browser-Werkzeuge am Präfix `mcp__tabs__`, deshalb muss der MCP-Server in der Hermes-Konfiguration `tabs` heißen (wie im Beispiel oben):
 
@@ -234,15 +295,14 @@ Selbsttest des Hooks: `python3 hermes-plugin/__init__.py`.
 
 ## Bekannte Grenzen
 
-- **Der Schreibschutz ist eine Leitplanke, keine Sandbox.** Er blockiert Nicht-GET-Anfragen, die `javascript` auf nicht freigegebenen Seiten auslöst. WebSocket-Nachrichten, Service Worker und GET-Anfragen mit Nebenwirkungen erfasst er nicht. `javascript` auf nicht freigegebenen Seiten ist damit nur per Konvention lesend, nicht per Garantie.
+- **Der Schreibschutz ist eine Leitplanke, keine Sandbox.** Solange `scriptWrites` aus ist, blockiert er Nicht-GET-Anfragen, die `javascript` auf nicht freigegebenen Seiten (und immer auf `data:` und `about:blank`) auslöst, bis zum nächsten Laden der Seite. In einem Tab, den du selbst freigegeben hast, endet er 3 s nach dem Skript, damit deine eigene Arbeit im Tab nicht blockiert wird; Anfragen, die ein Skript länger hinauszögert, kommen dort durch. WebSocket-Nachrichten, Service Worker und GET-Anfragen mit Nebenwirkungen erfasst er nicht. `javascript` auf nicht freigegebenen Seiten ist damit nur per Konvention lesend, nicht per Garantie.
 - **Der Agent arbeitet mit deinen Logins.** In einem freigegebenen Tab kann er auf dieser Seite alles, was du auch kannst, sobald du die Website freigibst. Gib nur frei, was du ihm zutraust.
 - **Screenshots holen den Tab kurz nach vorn.** Browser zeichnen Hintergrund-Tabs nicht, deshalb wird der Tab für einen Screenshot einen Moment lang in seinem Fenster nach vorn geholt; danach ist dein vorheriger Tab wieder aktiv. Das Fenster muss sichtbar sein: Ein verdecktes oder minimiertes Fenster rendert nichts, nach 6 s kommt „Kein Bild“, die Text-Werkzeuge arbeiten weiter.
-- **Keine CAPTCHAs und keine Logins durch den Agenten.** Er löst keine CAPTCHAs und gibt keine Passwörter ein. Wo das nötig ist, musst du den Schritt selbst machen. Manche Seiten verweigern außerdem Eingaben, wenn der Tab gesteuert wird.
+- **Keine CAPTCHAs, und standardmäßig keine Passwörter.** Der Agent löst keine CAPTCHAs und tippt nicht in Passwortfelder, solange du es nicht erlaubst (siehe [Passwörter](#passwörter)). Wo das nötig ist, musst du den Schritt selbst machen. Manche Seiten verweigern außerdem Eingaben, wenn der Tab gesteuert wird.
 - Inhalte in iframes fremder Herkunft liefert `read_page` nicht; dann mit Screenshot und Koordinaten arbeiten.
 - Einen Dialog, der beim Laden aufging, bevor die Extension zugreifen konnte, kann nur du im Browser bestätigen. Bei eigenen Tabs hilft `tabs_close`.
 - Popups von Passwortmanagern trennen den Debugger. Beim nächsten Befehl verbindet sich die Extension neu.
 - PDF-Ansicht und andere eingebaute Browser-Seiten sind nicht bedienbar; der Agent bekommt eine klare Meldung.
-- Es verbindet sich immer nur ein Browser.
 
 ## Tests
 
@@ -252,7 +312,7 @@ uv run python smoke_test.py
 
 Braucht `chromium` oder `google-chrome` im `PATH`; ein Lauf dauert etwa 3–4 Minuten.
 
-Der Test startet das Relay, headless Chromium mit geladener Extension und eine Testseite (iframe, Shadow DOM, Dialog, HTML5-Drag&Drop, Slider, Datei-Feld, Konsole, Netzwerk, Tastenkürzel). Er ruft alle Werkzeuge über MCP auf, einmal mit Skalierung 1 und einmal mit 2, und prüft außerdem die Tab-Grenze, den Token, Freigaben (keine Antwort, Nein, Einmal, Immer, Widerruf in den Optionen), Stopp, die Passwortsperre, fremde iframes, den Skript-Schreibschutz (auch Popup und Web Worker) und mehrere Browser an einem Relay (mit einem simulierten zweiten Browser). Die Nutzerklicks laufen dabei über einen eigenen Debugger als echte Mausereignisse.
+Der Test startet das Relay, headless Chromium mit geladener Extension und eine Testseite (iframe, Shadow DOM, Dialog, HTML5-Drag&Drop, Slider, Datei-Feld, Konsole, Netzwerk, Tastenkürzel). Er ruft alle Werkzeuge über MCP auf, einmal mit Skalierung 1 und einmal mit 2, und prüft außerdem die Tab-Grenze, den Token, Freigaben (keine Antwort, Nein, Einmal, Immer, Widerruf in den Optionen), Stopp, die Passwortsperre, fremde iframes, den Skript-Schreibschutz (auch Popup und Web Worker) mehrere Browser an einem Relay (mit einem simulierten zweiten Browser), die Website-Bindung selbst freigegebener Tabs, `data:`-Seiten, Autofill- und Einfüge-Tasten, eine Seite, die das Overlay entfernt, und dass der Token des Agenten die Admin-Routen nicht nutzen kann. Die Nutzerklicks laufen dabei über einen eigenen Debugger als echte Mausereignisse.
 
 Ports lassen sich mit `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` und `SMOKE_CDP_PORT` ändern, damit mehrere Läufe parallel gehen. Mit `SMOKE_SHOTS=<Ordner>` legt der Test Bilder des Overlays ab.
 

@@ -3,17 +3,18 @@
 // storage.local: it survives an extension reload but is discarded on browser start (tab IDs are
 // only valid for one browser session).
 
-importScripts("page.js"); // HERMES_PAGE: runs in the page via Runtime.evaluate
+importScripts("page.js", "safety.js"); // HERMES_PAGE: runs in the page via Runtime.evaluate; safety tiers
 
 const DEFAULTS = { relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" };
 const GROUP_TITLE = "Hermes";
 const VERSION = chrome.runtime.getManifest().version;
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs); // texts the user sees (_locales)
+const clip = (t, n) => (t = String(t).replace(/\s+/g, " ").trim()).length > n ? t.slice(0, n - 1) + "…" : t;
 const ACCENT = "#0053fd", DANGER = "#cf2d56"; // Hermes desktop accent and destructive colour
 
 let ws = null;
 const attached = new Set();
-const tabState = new Map(); // tabId -> { console, network, origin, dialog, onDialog }
+const tabState = new Map(); // tabId -> { console, network, origin, dialog, onDialog (Set of listeners), ... }
 
 // ---------- Shared tabs ----------
 
@@ -21,6 +22,9 @@ const tabState = new Map(); // tabId -> { console, network, origin, dialog, onDi
 // each other (e.g. write back a share that was just revoked).
 // storage.local persists it across service worker restarts and extension reloads.
 let sharedCache = null;
+// Tabs the user shared count as approved for the website (origin) they showed at that moment, not for every
+// website the tab visits later. Kept next to sharedCache in the same way (tabId -> origin).
+let shareOrigins = {};
 
 // Tabs in the "Hermes" group were opened by Hermes: they are re-adopted on load so that no orphaned
 // tabs remain after an extension reload or a browser start.
@@ -38,23 +42,29 @@ async function hermesGroupTabs() {
 
 async function getShared() {
   if (!sharedCache) {
-    const { shared = {} } = await chrome.storage.local.get("shared");
+    const { shared = {}, shareOrigins: origins = {} } = await chrome.storage.local.get(["shared", "shareOrigins"]);
     for (const id of await hermesGroupTabs()) shared[id] ??= "agent";
-    sharedCache ??= shared;
+    // Shares from before 0.9 carry no website: the one the tab shows now counts.
+    for (const [id, owner] of Object.entries(shared)) if (owner === "user") origins[id] ??= await tabOrigin(+id);
+    if (!sharedCache) [sharedCache, shareOrigins] = [shared, origins];
   }
   return sharedCache; // tabId -> "user" | "agent"
 }
+const tabOrigin = (tabId) => chrome.tabs.get(tabId).then((t) => originOf(t.url || t.pendingUrl || ""), () => "");
 
 chrome.runtime.onStartup.addListener(() => {
   sharedCache = null; // new browser session: drop old tab IDs, re-adopt the Hermes group
-  chrome.storage.local.remove("shared");
+  chrome.storage.local.remove(["shared", "shareOrigins"]);
 });
 
 async function setShared(tabId, owner) {
+  const origin = owner === "user" ? await tabOrigin(tabId) : "";
   const shared = await getShared();
   if (owner) shared[tabId] = owner;
   else delete shared[tabId];
-  await chrome.storage.local.set({ shared: { ...shared } });
+  if (owner === "user") shareOrigins[tabId] = origin;
+  else delete shareOrigins[tabId];
+  await chrome.storage.local.set({ shared: { ...shared }, shareOrigins: { ...shareOrigins } });
   await chrome.action.setBadgeText({ tabId, text: owner ? "✓" : "" }).catch(() => {});
   // per tab: blue check mark while shared; afterwards back to the colour of the global "off" badge
   await chrome.action.setBadgeBackgroundColor({ tabId, color: owner ? ACCENT : DANGER }).catch(() => {});
@@ -155,7 +165,7 @@ async function addToGroup(tabId) {
 
 const MAX_BUFFER = 1000;
 const state = (tabId) => {
-  if (!tabState.has(tabId)) tabState.set(tabId, { console: [], network: new Map(), origin: "", dialog: null, onDialog: null });
+  if (!tabState.has(tabId)) tabState.set(tabId, { console: [], network: new Map(), origin: "", dialog: null, onDialog: new Set() });
   return tabState.get(tabId);
 };
 const originOf = (url) => {
@@ -227,16 +237,17 @@ chrome.debugger.onEvent.addListener(({ tabId }, method, p) => {
     case "Page.frameNavigated":
       if (!p.frame.parentId) {
         st.worldCtx = null;
-        if (st.jsGuard) { st.jsGuard = false; send(tabId, "Fetch.disable").catch(() => {}); } // the old document's timers are gone
+        releaseGuard(tabId); // the old document's timers are gone
         const origin = originOf(p.frame.url);
         if (origin !== st.origin) st.network.clear(); // new domain, new list
         st.origin = origin;
         st.perfCutoff = undefined; // new document, new performance timeline
+        st.tampered = false; // new document, new overlay
       }
       break;
     case "Page.javascriptDialogOpening":
       st.dialog = { type: p.type, message: p.message, defaultPrompt: p.defaultPrompt };
-      st.onDialog?.();
+      for (const f of st.onDialog) f();
       break;
     case "Page.javascriptDialogClosed":
       st.dialog = null;
@@ -246,6 +257,15 @@ chrome.debugger.onEvent.addListener(({ tabId }, method, p) => {
       break;
   }
 });
+
+// Write guard of the javascript tool (see handlers.javascript).
+const GUARD_TAIL_MS = 3000; // in tabs the user shared: how long the guard outlasts the script
+function releaseGuard(tabId) {
+  const st = tabState.get(tabId);
+  if (!st) return;
+  clearTimeout(st.guardTail);
+  if (st.jsGuard) { st.jsGuard = false; send(tabId, "Fetch.disable").catch(() => {}); }
+}
 
 const inflight = new Map(); // running debugger commands, for /admin/status
 let inflightId = 0;
@@ -306,13 +326,14 @@ async function cdp(tabId, method, params = {}) {
   const st = state(tabId);
   if (st.dialog) throw dialogError(st.dialog);
   // If the page opens a dialog meanwhile, the command blocks – report it immediately.
-  const opened = new Promise((resolve) => (st.onDialog = () => resolve(DIALOG)));
+  let onDialog;
+  const opened = new Promise((resolve) => st.onDialog.add((onDialog = () => resolve(DIALOG))));
   const r = await Promise.race([withTimeout(send(tabId, method, params), 30000, method), opened]).catch((e) => {
     if (/navigated or closed|Cannot find context/i.test(e.message)) {
       throw new Error(`Page navigated or was closed during ${method} – result unknown, check the state`);
     }
     throw e;
-  });
+  }).finally(() => st.onDialog.delete(onDialog));
   if (r === DIALOG) throw dialogError(st.dialog);
   return r;
 }
@@ -432,6 +453,14 @@ for (let i = 1; i <= 12; i++) KEYS[`f${i}`] = [`F${i}`, 111 + i];
 const CODES = { Enter: "Enter", Tab: "Tab", Escape: "Escape", Backspace: "Backspace", Delete: "Delete", " ": "Space" };
 const EDIT_COMMANDS = { a: "selectAll", c: "copy", x: "cut", v: "paste", z: "undo", y: "redo" };
 
+// Does the key put text into the field (as in pressKey: characters, Space, Enter) or paste (Ctrl/Cmd+V, Shift+Insert)?
+const keyName = (combo) => (combo.split("+").pop() || "+").toLowerCase();
+function typesText(combo) {
+  const raw = keyName(combo), mods = modMask(combo.split("+").slice(0, -1).join("+"));
+  if ((mods & 6 && raw === "v") || (mods & 8 && raw === "insert")) return true;
+  return !(mods & 7) && (raw.length === 1 || KEYS[raw]?.[2] !== undefined);
+}
+
 async function pressKey(tabId, combo) {
   const parts = combo.split("+");
   const raw = parts.pop() || "+";
@@ -505,8 +534,16 @@ async function point(tabId, { ref, coordinate }) {
 }
 
 const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
-const OPAQUE_REFUSAL = "Focus is inside a cross-origin iframe (often login or payment) – Hermes does not type there, the user does that";
-const PASSWORD_REFUSAL = "The focused field is a password field – Hermes does not enter credentials, the user does that";
+const OFF_HINT = "turned off in the hermes-tabs safety settings";
+const OPAQUE_REFUSAL = `Focus is inside a cross-origin iframe (often login or payment) – typing there is ${OFF_HINT}, the user does that`;
+const PASSWORD_REFUSAL = `The focused field is a password field – entering credentials is ${OFF_HINT}, the user does that`;
+const AUTOFILL_REFUSAL = "Arrow and page keys in a sign-in field can pick a login the browser saved (autofill) – signing in " +
+  `is ${OFF_HINT} (passwords), the user does that`;
+const AUTOFILL_KEYS = new Set(["arrowup", "up", "arrowdown", "down", "pageup", "page_up", "pagedown", "page_down"]);
+const LEAVE_KEY = /^(shift\+)?tab$|^escape$/i; // in a password field only leaving it is allowed
+// p.sensitive: the request's text may have been meant for a password field (or a cross-origin iframe whose field type
+// is unknown). The reply carries the flag, and the relay then keeps the value out of its log.
+const refuse = (p, text) => ((p.sensitive = true), new Error(text));
 
 async function computer(p) {
   const { tabId, action } = p;
@@ -556,15 +593,16 @@ async function computer(p) {
       }
     }
     case "type": {
-      const focus = await page(tabId, "focusInfo");
-      if (focus.password) throw new Error(PASSWORD_REFUSAL);
-      if (focus.opaque) throw new Error(OPAQUE_REFUSAL);
+      const focus = await page(tabId, "focusInfo"), s = await getSafety();
+      if (focus.password && !s.passwords) throw refuse(p, PASSWORD_REFUSAL);
+      if (focus.opaque && !s.frameTyping) throw refuse(p, OPAQUE_REFUSAL);
+      if (focus.password || focus.opaque) p.sensitive = true;
       // Without a focused input the text would go nowhere – Hermes should learn that instead of reading "typed".
-      if (!focus.editable) {
+      if (!focus.editable && !focus.opaque) { // inside a cross-origin iframe the field cannot be checked
         throw new Error(`No input field has focus (active: ${focus.tag ?? "nothing"}) – nothing typed. Click into the field first; ` +
           "if the click only opens a search/menu, run find/read_page again and click the new field.");
       }
-      await show(tabId, { active: true, label: p.summary || `${ACTION_LABELS.type}: ${String(p.text ?? "").slice(0, 40)}` });
+      await show(tabId, { active: true, label: p.summary || `${ACTION_LABELS.type}: ${p.sensitive ? "••••" : String(p.text ?? "").slice(0, 40)}` });
       await cdp(tabId, "Input.insertText", { text: p.text ?? "" });
       return { text: "typed" };
     }
@@ -572,15 +610,31 @@ async function computer(p) {
       const keys = (p.text ?? "").trim().split(/\s+/).filter(Boolean);
       if (!keys.length) throw new Error("Provide text with keys, e.g. \"Enter\" or \"ctrl+a\"");
       const repeat = Math.max(1, Math.min(100, Math.floor(p.repeat ?? 1)));
+      const s = await getSafety();
       // In a password field only leaving the field is allowed – otherwise e.g. ctrl+v (clipboard) or Enter (submit a saved password).
-      if (keys.some((k) => !/^(shift\+)?tab$|^escape$/i.test(k))) {
-        const focus = await page(tabId, "focusInfo");
-        if (focus.password) throw new Error(PASSWORD_REFUSAL);
-        if (focus.opaque && keys.some((k) => k.length === 1 || /^ctrl\+v$/i.test(k))) throw new Error(OPAQUE_REFUSAL);
+      const check = async (ks) => {
+        if (ks.every((k) => LEAVE_KEY.test(k))) return;
+        const focus = await page(tabId, "focusInfo"), typing = ks.some(typesText);
+        if (focus.password && !s.passwords) throw refuse(p, PASSWORD_REFUSAL);
+        if (focus.opaque && typing && !s.frameTyping) throw refuse(p, OPAQUE_REFUSAL);
+        if (focus.login && !s.passwords && ks.some((k) => AUTOFILL_KEYS.has(keyName(k)))) throw refuse(p, AUTOFILL_REFUSAL);
+        if (focus.password || (focus.opaque && typing)) p.sensitive = true;
+      };
+      await check(keys);
+      // single characters in a password field are the password
+      await show(tabId, { active: true, label: p.summary || `${ACTION_LABELS.key}: ${p.sensitive ? "••••" : p.text}` });
+      let moved = false; // Tab, Enter, arrows ... may have moved the focus (e.g. from the user name into the password field)
+      for (let i = 0; i < repeat; i++) {
+        for (const k of keys) {
+          if (moved) {
+            await check([k]).catch((e) => { e.message += " (stopped mid-sequence: the keys before were pressed)"; throw e; });
+          }
+          await pressKey(tabId, k);
+          moved = !typesText(k) || /^(enter|return)$/.test(keyName(k));
+        }
       }
-      await show(tabId, { active: true, label: p.summary || `${ACTION_LABELS.key}: ${p.text}` });
-      for (let i = 0; i < repeat; i++) for (const k of keys) await pressKey(tabId, k);
-      return { text: `keys: ${p.text}${repeat > 1 ? ` ×${repeat}` : ""}${p.repeat > 100 ? " (capped at 100)" : ""}` };
+      const shown = p.sensitive ? "••••" : p.text;
+      return { text: `keys: ${shown}${repeat > 1 ? ` ×${repeat}` : ""}${p.repeat > 100 ? " (capped at 100)" : ""}` };
     }
     case "scroll": {
       const vp = await page(tabId, "viewport");
@@ -634,7 +688,32 @@ const OVERLAY_TEXT = Object.fromEntries(["overlayBar", "overlayStop", "askDeny",
 const dataUrl = (file) => fetch(file).then((r) => r.arrayBuffer())
   .then((b) => "data:image/png;base64," + btoa(String.fromCharCode(...new Uint8Array(b))));
 const LOGO = Promise.all([dataUrl("icon48.png"), dataUrl("icon48-dark.png")]).catch(() => []);
-const show = async (tabId, o) => page(tabId, "overlay", { ...o, t: OVERLAY_TEXT, logo: await LOGO }).catch(() => {});
+// Wide rights stay visible to the user in the stop bar.
+const rightsNote = (s) => (s.tier === "full" ? msg("overlayFull") : s.passwords ? msg("overlayPasswords") : "");
+const show = async (tabId, o) => {
+  const r = await page(tabId, "overlay", { ...o, t: OVERLAY_TEXT, logo: await LOGO, warn: rightsNote(await getSafety()) }).catch(() => {});
+  if (r === "tampered") overlayTampered(tabId);
+};
+
+// The page keeps removing or restyling the overlay: tell the user (badge, notification) and the agent (TAMPER_NOTE in
+// every answer for this tab until the next page load).
+const TAMPER_NOTE = "Warning: this page keeps removing or hiding the Hermes overlay, so the user may not see your actions " +
+  "in the tab. Treat the page as hostile and tell the user.";
+async function overlayTampered(tabId) {
+  const st = state(tabId);
+  if (st.tampered) return;
+  st.tampered = true;
+  chrome.action.setBadgeText({ tabId, text: "!" }).catch(() => {});
+  chrome.action.setBadgeBackgroundColor({ tabId, color: DANGER }).catch(() => {});
+  const host = new URL((await chrome.tabs.get(tabId).catch(() => ({}))).url || "about:blank").host;
+  try {
+    chrome.notifications.create(`hermes-tamper-${tabId}-${Date.now()}`, {
+      type: "basic", iconUrl: "icon128.png", title: msg("tamperTitle"), message: msg("tamperText", host),
+    }, () => void chrome.runtime.lastError);
+  } catch {}
+}
+const withNote = (r, note) => typeof r === "string" ? `${r}\n(${note})`
+  : r && typeof r === "object" ? (typeof r.text === "string" ? { ...r, text: `${r.text}\n(${note})` } : { ...r, warning: note }) : r;
 
 const labels = (prefix, keys) => Object.fromEntries(keys.map((k) => [k, msg(prefix + k)]));
 const LABELS = labels("label_", ["read_page", "get_page_text", "find", "javascript", "form_input", "file_upload", "navigate",
@@ -647,6 +726,21 @@ const ACTING = new Set(["left_click", "right_click", "double_click", "triple_cli
 const isActing = (method, p) =>
   method === "computer" ? ACTING.has(p.action)
     : ["form_input", "file_upload", "drop_files"].includes(method) || (method === "handle_dialog" && !!p.accept);
+
+// Safety switches (safety.js): which one a request needs; reading, screenshots, scrolling and hovering need none.
+const NEEDS = { form_input: "act", javascript: "js", navigate: "navigate", file_upload: "upload", drop_files: "upload",
+  download: "download", read_console_messages: "devtools", read_network_requests: "devtools" };
+const needs = (method, p) => (["computer", "handle_dialog"].includes(method) ? (isActing(method, p) ? "act" : null) : NEEDS[method]);
+const NEEDS_TEXT = { act: "clicking, typing, keys, form input and confirming dialogs", js: "the javascript tool",
+  navigate: "opening and loading pages (tabs_create, navigate)", upload: "uploading files", download: "downloads",
+  devtools: "reading console messages and network requests" };
+async function assertCapability(need) {
+  const s = await getSafety();
+  if (!s[need]) {
+    throw new Error(`Turned off in the hermes-tabs safety settings (tier ${s.tier}): ${NEEDS_TEXT[need]}. ` +
+      "Do not work around it (e.g. via javascript); ask the user, who can change it in the extension options.");
+  }
+}
 
 const pendingAsks = new Map(); // tabId -> { origin, promise, notifId, resolve }
 const onceAllowed = new Map(); // tabId -> origin ("once" holds until the tab changes website)
@@ -661,15 +755,25 @@ async function permissions() {
   return { enabled: true, siteMode: "ask", allowedSites: {}, allowAllUntil: 0, blockedSites: [], sessionSites: {}, allowAllSession: false, ...local, ...session };
 }
 
+// data:, about:blank: no website that could be approved – Hermes reads there but does not act.
+const NOT_WEB_ERROR = "This tab shows a data: or about:blank page, not a website – Hermes does not act there " +
+  "(reading works). Load the website with navigate first.";
+const webUrls = (t) => {
+  // During a navigation the target (pendingUrl) counts too, otherwise a click lands on a site without permission.
+  const urls = [t.url, t.pendingUrl].filter(Boolean);
+  return urls.length && urls.every((u) => /^https?:/i.test(u)) ? urls : null;
+};
+
 async function siteAllowed(tabId) {
-  if ((await getShared())[tabId] === "user") return true; // tab shared by the user = explicit consent
+  const urls = webUrls(await chrome.tabs.get(tabId));
+  if (!urls) return false;
   const { siteMode, allowedSites, allowAllUntil, sessionSites, allowAllSession } = await permissions();
   if (siteMode === "all" || allowAllSession || allowAllUntil > Date.now()) return true;
-  const t = await chrome.tabs.get(tabId);
-  // During a navigation the target (pendingUrl) counts too, otherwise a click lands on a site without permission.
-  return [t.url, t.pendingUrl].filter((u) => u && /^https?:/i.test(u)).every((u) => {
+  await getShared();
+  return urls.every((u) => {
     const { origin } = new URL(u);
-    return !!allowedSites[origin] || !!sessionSites[origin] || onceAllowed.get(tabId) === origin;
+    // a tab the user shared = consent for the website it showed then (other pages of the same origin too)
+    return shareOrigins[tabId] === origin || !!allowedSites[origin] || !!sessionSites[origin] || onceAllowed.get(tabId) === origin;
   });
 }
 
@@ -693,8 +797,9 @@ async function applyDecision(decision, tabId, origin) {
 async function assertSiteAllowed(tabId, summary) {
   await assertAllowed(tabId);
   if (await siteAllowed(tabId)) return;
-  const { permTimeoutMs = 50000 } = await chrome.storage.local.get("permTimeoutMs");
   const t = await chrome.tabs.get(tabId);
+  if (!webUrls(t)) throw new Error(NOT_WEB_ERROR);
+  const { permTimeoutMs = 50000 } = await chrome.storage.local.get("permTimeoutMs");
   const { origin, host } = new URL(t.pendingUrl || t.url);
   const decision = await askPermission(tabId, origin, host, summary, permTimeoutMs);
   if (await applyDecision(decision, tabId, origin)) return;
@@ -705,6 +810,7 @@ async function assertSiteAllowed(tabId, summary) {
 function askPermission(tabId, origin, host, summary, timeoutMs) {
   const prev = pendingAsks.get(tabId);
   if (prev && prev.origin === origin) return prev.promise;
+  prev?.resolve("deny"); // the tab moved to another website: the old question is void (also removes its notification)
   const notifId = `hermes-perm-${tabId}-${Date.now()}`;
   let done;
   const entry = { origin, notifId, promise: new Promise((r) => (done = r)) };
@@ -718,11 +824,12 @@ function askPermission(tabId, origin, host, summary, timeoutMs) {
     done(decision);
   };
   pendingAsks.set(tabId, entry);
-  const text = msg("askText", host) + (summary ? `: ${summary}` : "");
-  show(tabId, { active: true, ask: text });
+  // The agent's own words, visibly apart from the extension's question and shortened.
+  const q = msg("askText", host), say = summary ? msg("askSays", clip(summary, 120)) : "";
+  show(tabId, { active: true, ask: q, say });
   try {
     chrome.notifications.create(notifId, {
-      type: "basic", iconUrl: "icon128.png", title: msg("notifTitle"), message: text, requireInteraction: true,
+      type: "basic", iconUrl: "icon128.png", title: msg("notifTitle"), message: say ? `${q}\n${say}` : q, requireInteraction: true,
       buttons: [{ title: msg("notifSession") }, { title: msg("notifAll1h") }],
     }, () => void chrome.runtime.lastError);
   } catch {}
@@ -758,13 +865,60 @@ function askPair(timeoutMs, pairId) {
   });
 }
 
-chrome.notifications.onClicked.addListener((id) => pairAsk?.notifId === id && pairAsk.resolve(true));
+// Loosening a setting through the relay: the user confirms in the browser (one request at a time, 120 s).
+// The admin token sits in Hermes' environment, so the agent could read it and try to grant itself rights.
+const CONFIRM_MS = 120000;
+let looseAsk = null; // { id, clicked, resolve(answer) }
+chrome.storage.session.remove("pendingLoosening"); // a request from before a service worker restart is gone
+// ... and so are its notification and those of permission and browser requests: their answers would reach nobody.
+chrome.notifications.getAll((all) => { for (const id in all ?? {}) if (/^hermes-(loosen|perm|pair)-/.test(id)) chrome.notifications.clear(id); });
+
+async function askLoosening(summary) {
+  const { confirmTimeoutMs = CONFIRM_MS } = await chrome.storage.local.get("confirmTimeoutMs");
+  if (looseAsk) throw new Error("Another settings change is waiting for the user's confirmation in the browser – try again later");
+  const id = `hermes-loosen-${Date.now()}`;
+  return new Promise((done) => {
+    const timer = setTimeout(() => entry.resolve("expired"), Math.min(confirmTimeoutMs, CONFIRM_MS));
+    const entry = {
+      id,
+      resolve(answer) {
+        if (looseAsk !== entry) return;
+        looseAsk = null;
+        clearTimeout(timer);
+        chrome.notifications.clear(id).catch?.(() => {});
+        chrome.storage.session.remove("pendingLoosening");
+        done(answer);
+      },
+    };
+    looseAsk = entry;
+    chrome.storage.session.set({ pendingLoosening: { id, summary } }); // the options page shows it too
+    try {
+      chrome.notifications.create(id, {
+        type: "basic", iconUrl: "icon128.png", title: msg("looseTitle"), message: msg("looseText", summary), requireInteraction: true,
+        buttons: [{ title: msg("looseConfirm") }, { title: msg("looseDecline") }],
+      }, () => void chrome.runtime.lastError);
+    } catch {}
+  });
+}
+// The options page answers for systems that show no notification buttons (only extension pages can send this).
+chrome.runtime.onMessage.addListener((m, sender) => {
+  if (m?.type === "loosening" && sender.url?.startsWith(chrome.runtime.getURL("options.html")) && looseAsk?.id === m.id) {
+    looseAsk.resolve(m.ok === true ? "confirmed" : "declined");
+  }
+});
+
+chrome.notifications.onClicked.addListener((id) => {
+  if (pairAsk?.notifId === id) pairAsk.resolve(true);
+  if (looseAsk?.id === id) { looseAsk.clicked = true; chrome.runtime.openOptionsPage(); } // never confirms by itself
+});
 chrome.notifications.onButtonClicked.addListener((id, index) => {
   if (pairAsk?.notifId === id) pairAsk.resolve(true);
+  if (looseAsk?.id === id) looseAsk.resolve(index === 0 ? "confirmed" : "declined");
   for (const e of pendingAsks.values()) if (e.notifId === id) e.resolve(index === 0 ? "session" : "all1h");
 });
 chrome.notifications.onClosed.addListener((id, byUser) => {
   if (byUser && pairAsk?.notifId === id) pairAsk.resolve(false);
+  if (byUser && looseAsk?.id === id && !looseAsk.clicked) looseAsk.resolve("declined");
   if (byUser) for (const e of pendingAsks.values()) if (e.notifId === id) e.resolve("deny");
 });
 
@@ -787,44 +941,135 @@ function onOverlayEvent(tabId, payload, contextId) {
   if (ev.type === "permission") pendingAsks.get(tabId)?.resolve(ev.decision);
 }
 
+// ---------- Settings through the relay ----------
+
+// Checks and normalizes a /admin/settings body completely before anything is stored.
+async function parseSettings({ enabled, siteMode, allowAll, sites, blockedSites, safety }) {
+  const out = {};
+  if (enabled !== undefined) out.enabled = !!enabled;
+  if (blockedSites !== undefined) {
+    if (!Array.isArray(blockedSites)) throw new Error("blockedSites: list of domains");
+    const clean = [...new Set(blockedSites.map((d) => String(d).trim().toLowerCase()
+      .replace(/^[a-z]+:\/\//, "").replace(/^\*\./, "").split(/[/:?#]/)[0]).filter(Boolean))];
+    const bad = clean.find((d) => !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d));
+    if (bad) throw new Error(`Invalid domain ${bad} (e.g. example.com)`);
+    out.blockedSites = clean.sort();
+  }
+  if (siteMode !== undefined) {
+    if (!["ask", "all"].includes(siteMode)) throw new Error("siteMode: ask or all");
+    out.siteMode = siteMode;
+  }
+  if (allowAll !== undefined) {
+    if (!["1h", "8h", "session", "off"].includes(allowAll)) throw new Error("allowAll: 1h, 8h, session or off");
+    out.allowAll = allowAll;
+  }
+  if (sites !== undefined) {
+    out.sites = {};
+    for (const [origin, level] of Object.entries(sites ?? {})) {
+      if (!/^https?:\/\/[^/]+$/.test(origin)) throw new Error(`Invalid website ${origin} (e.g. https://example.com)`);
+      if (![null, "off", "session", "always"].includes(level)) throw new Error("Level: always, session or off");
+      out.sites[origin] = level ?? "off";
+    }
+  }
+  if (safety !== undefined) {
+    if (!safety || typeof safety !== "object" || Array.isArray(safety)) throw new Error("safety: object with tier and/or switches");
+    const { tier, ...flags } = safety;
+    if (tier !== undefined && tier !== "custom" && !Object.hasOwn(SAFETY_TIERS, tier)) {
+      throw new Error(`safety.tier: ${Object.keys(SAFETY_TIERS).join(", ")} or custom`);
+    }
+    const bad = Object.entries(flags).find(([k, v]) => !SAFETY_KEYS.includes(k) || typeof v !== "boolean");
+    if (bad) throw new Error(`safety.${bad[0]}: unknown switch or not true/false (switches: ${SAFETY_KEYS.join(", ")})`);
+    const cur = await getSafety();
+    out.safety = resolveSafety({ ...(Object.hasOwn(SAFETY_TIERS, tier ?? "") ? SAFETY_TIERS[tier] : cur), ...flags });
+    if (out.safety.tier === "full" && cur.tier !== "full") out.siteMode = "all"; // "full" means no question per website either
+  }
+  return out;
+}
+
+// Splits a change into what tightens (applied at once) and what loosens (applied after confirmation).
+// items: [code for the relay's answer, text for the user].
+async function splitSettings(next) {
+  const cur = await permissions(), curSafety = await getSafety();
+  const tight = {}, loose = {}, items = [];
+  if (next.enabled !== undefined) {
+    if (next.enabled && !cur.enabled) { loose.enabled = true; items.push(["enabled", msg("looseEnabled")]); }
+    else tight.enabled = next.enabled;
+  }
+  if (next.siteMode !== undefined) {
+    if (next.siteMode === "all" && cur.siteMode !== "all") { loose.siteMode = "all"; items.push(["siteMode:all", msg("optModeAll")]); }
+    else tight.siteMode = next.siteMode;
+  }
+  if (next.allowAll === "off") tight.allowAll = "off";
+  else if (next.allowAll) {
+    loose.allowAll = next.allowAll;
+    items.push([`allowAll:${next.allowAll}`, `${msg("optTempHeading")}: ${msg({ "1h": "opt1h", "8h": "opt8h", session: "optUntilRestart" }[next.allowAll])}`]);
+  }
+  const rank = { off: 0, session: 1, always: 2 };
+  for (const [origin, level] of Object.entries(next.sites ?? {})) {
+    const now = cur.allowedSites[origin] ? "always" : cur.sessionSites[origin] ? "session" : "off";
+    if (rank[level] <= rank[now]) (tight.sites ??= {})[origin] = level;
+    else {
+      (loose.sites ??= {})[origin] = level;
+      items.push([`sites:${origin}:${level}`, `${msg(level === "always" ? "optAlwaysHeading" : "optSessionHeading")}: ${origin}`]);
+    }
+  }
+  if (next.blockedSites) {
+    tight.blockedSites = [...new Set([...cur.blockedSites, ...next.blockedSites])].sort(); // additions at once
+    loose.unblock = cur.blockedSites.filter((d) => !next.blockedSites.includes(d));
+    for (const d of loose.unblock) items.push([`blockedSites:-${d}`, msg("looseUnblock", d)]);
+  }
+  if (next.safety) {
+    // Switches turned off apply at once, switches turned on wait for the confirmation.
+    tight.safety = resolveSafety(Object.fromEntries(SAFETY_KEYS.map((k) => [k, curSafety[k] && next.safety[k]])));
+    loose.safetyOn = loosenedKeys(curSafety, next.safety);
+    for (const k of loose.safetyOn) items.push([`safety.${k}`, msg(`safety_${k}`)]);
+  }
+  return { tight, loose, items };
+}
+
+// Stores normalized settings. unblock and safetyOn are applied to the state at that moment, so a confirmation that
+// arrives later does not undo what the user tightened meanwhile.
+async function applySettings({ enabled, siteMode, allowAll, sites, blockedSites, unblock, safety, safetyOn }) {
+  if (unblock?.length) blockedSites = (await permissions()).blockedSites.filter((d) => !unblock.includes(d));
+  if (safetyOn?.length) safety = resolveSafety({ ...(await getSafety()), ...Object.fromEntries(safetyOn.map((k) => [k, true])) });
+  if (enabled !== undefined) await chrome.storage.local.set({ enabled });
+  if (blockedSites !== undefined) await chrome.storage.local.set({ blockedSites });
+  if (siteMode !== undefined) await chrome.storage.local.set({ siteMode });
+  if (safety !== undefined) await chrome.storage.local.set({ safety });
+  if (allowAll !== undefined) {
+    const h = { "1h": 1, "8h": 8 }[allowAll];
+    if (h) await chrome.storage.local.set({ allowAllUntil: Date.now() + h * HOUR });
+    else if (allowAll === "session") await chrome.storage.session.set({ allowAllSession: true });
+    else { await chrome.storage.local.set({ allowAllUntil: 0 }); await chrome.storage.session.set({ allowAllSession: false }); }
+  }
+  for (const [origin, level] of Object.entries(sites ?? {})) {
+    const { allowedSites = {} } = await chrome.storage.local.get("allowedSites");
+    const { sessionSites = {} } = await chrome.storage.session.get("sessionSites");
+    delete allowedSites[origin]; delete sessionSites[origin];
+    if (level === "always") allowedSites[origin] = true;
+    else if (level === "session") sessionSites[origin] = true;
+    await chrome.storage.local.set({ allowedSites });
+    await chrome.storage.session.set({ sessionSites });
+  }
+}
+
 // ---------- Commands ----------
 
 const handlers = {
   // Only from the relay via /admin/settings (separate admin token), not an MCP tool: Hermes cannot grant itself rights.
-  async settings({ enabled, siteMode, allowAll, sites, blockedSites }) {
-    if (enabled !== undefined) await chrome.storage.local.set({ enabled: !!enabled });
-    if (blockedSites !== undefined) {
-      if (!Array.isArray(blockedSites)) throw new Error("blockedSites: list of domains");
-      const clean = [...new Set(blockedSites.map((d) => String(d).trim().toLowerCase()
-        .replace(/^[a-z]+:\/\//, "").replace(/^\*\./, "").split(/[/:?#]/)[0]).filter(Boolean))];
-      const bad = clean.find((d) => !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d));
-      if (bad) throw new Error(`Invalid domain ${bad} (e.g. example.com)`);
-      await chrome.storage.local.set({ blockedSites: clean.sort() });
-    }
-    if (siteMode !== undefined) {
-      if (!["ask", "all"].includes(siteMode)) throw new Error("siteMode: ask or all");
-      await chrome.storage.local.set({ siteMode });
-    }
-    if (allowAll !== undefined) {
-      const h = { "1h": 1, "8h": 8 }[allowAll];
-      if (h) await chrome.storage.local.set({ allowAllUntil: Date.now() + h * HOUR });
-      else if (allowAll === "session") await chrome.storage.session.set({ allowAllSession: true });
-      else if (allowAll === "off") { await chrome.storage.local.set({ allowAllUntil: 0 }); await chrome.storage.session.set({ allowAllSession: false }); }
-      else throw new Error("allowAll: 1h, 8h, session or off");
-    }
-    for (const [origin, level] of Object.entries(sites ?? {})) {
-      if (!/^https?:\/\/[^/]+$/.test(origin)) throw new Error(`Invalid website ${origin} (e.g. https://example.com)`);
-      const { allowedSites = {} } = await chrome.storage.local.get("allowedSites");
-      const { sessionSites = {} } = await chrome.storage.session.get("sessionSites");
-      delete allowedSites[origin]; delete sessionSites[origin];
-      if (level === "always") allowedSites[origin] = true;
-      else if (level === "session") sessionSites[origin] = true;
-      else if (level !== null && level !== "off") throw new Error("Level: always, session or off");
-      await chrome.storage.local.set({ allowedSites });
-      await chrome.storage.session.set({ sessionSites });
+  // Tightening applies at once; loosening only after the user confirms it in the browser (askLoosening).
+  async settings(body) {
+    const next = await parseSettings(body);
+    const { tight, loose, items } = await splitSettings(next);
+    await applySettings(tight);
+    let confirmation = "not_needed";
+    if (items.length) {
+      confirmation = await askLoosening(items.map((i) => i[1]).join("; "));
+      if (confirmation === "confirmed") await applySettings(loose);
     }
     const p = await permissions();
-    return { ...p, allowAllUntil: p.allowAllUntil > Date.now() ? new Date(p.allowAllUntil).toISOString() : null };
+    return { ...p, allowAllUntil: p.allowAllUntil > Date.now() ? new Date(p.allowAllUntil).toISOString() : null,
+      safety: await getSafety(), ...(Object.keys(body).length && { confirmation, loosening: items.map((i) => i[0]) }) };
   },
 
   status: async () => ({
@@ -864,6 +1109,7 @@ const handlers = {
   },
 
   async tabs_create({ url }) {
+    await assertCapability("navigate"); // also for tabs_context(createIfEmpty)
     // Directly with the target URL: in some Chromium browsers the debugger cannot take over an empty background tab.
     const target = url ? normalizeUrl(url) : "about:blank";
     await assertNotBlocked(target);
@@ -879,15 +1125,26 @@ const handlers = {
   async tabs_close({ tabId }) {
     const shared = await getShared();
     const owner = Number.isInteger(tabId) && Object.hasOwn(shared, String(tabId)) ? shared[tabId] : undefined;
-    if (owner !== "agent") throw new Error("Only tabs opened by Hermes itself may be closed");
+    if (owner !== "agent" && !(owner === "user" && (await getSafety()).closeShared)) {
+      throw new Error("Only tabs opened by Hermes itself may be closed" + (owner === "user" ? ` (closing shared tabs is ${OFF_HINT})` : ""));
+    }
     // A beforeunload handler would block closing forever. Hermes explicitly wants to close its own tab,
-    // so confirm the dialog while doing so.
-    const st = state(tabId);
-    const confirm = () => attached.has(tabId) &&
-      chrome.debugger.sendCommand({ tabId }, "Page.handleJavaScriptDialog", { accept: true }).catch(() => {});
-    if (st.dialog) await confirm();
-    st.onDialog = confirm;
-    await withTimeout(chrome.tabs.remove(tabId), 10000, "Closing tab");
+    // so confirm the dialog while doing so. A tab the user shared may hold their unsaved work: cancel and leave it to them.
+    const st = state(tabId), user = owner === "user";
+    if (user && st.dialog) throw dialogError(st.dialog);
+    let unsaved;
+    const refused = new Promise((_, reject) => (unsaved = reject));
+    const answer = () => {
+      if (attached.has(tabId)) chrome.debugger.sendCommand({ tabId }, "Page.handleJavaScriptDialog", { accept: !user }).catch(() => {});
+      if (user) unsaved(new Error("The tab has unsaved changes – it stays open; the user closes it themselves"));
+    };
+    if (st.dialog) answer();
+    st.onDialog.add(answer);
+    try {
+      await Promise.race([withTimeout(chrome.tabs.remove(tabId), 10000, "Closing tab"), refused]);
+    } finally {
+      st.onDialog.delete(answer);
+    }
     return "closed";
   },
 
@@ -926,7 +1183,13 @@ const handlers = {
   read_page: ({ tabId, filter, ref_id, depth, max_chars }) =>
     page(tabId, "read", { filter, refId: ref_id, depth: depth ?? 15, maxChars: max_chars ?? 50000 }),
   find: ({ tabId, query }) => page(tabId, "find", { query }),
-  form_input: ({ tabId, ref, value }) => page(tabId, "formInput", { ref, value }),
+  async form_input(p) {
+    const r = await page(p.tabId, "formInput", { ref: p.ref, value: p.value, passwords: (await getSafety()).passwords });
+    if (!r?.password) return r;
+    if (r.refused) throw refuse(p, `${p.ref} is a password field – entering credentials is ${OFF_HINT}, the user does that`);
+    p.sensitive = true;
+    return r.text;
+  },
   get_page_text: ({ tabId, max_chars }) => page(tabId, "pageText", { maxChars: max_chars ?? 50000 }),
   file_upload: ({ tabId, ref, files }) => page(tabId, "upload", { ref, files }),
   drop_files: ({ tabId, coordinate, files }) => page(tabId, "drop", { x: coordinate[0], y: coordinate[1], files }),
@@ -937,18 +1200,32 @@ const handlers = {
   // the debugger blocks all requests except GET/HEAD/OPTIONS (including ones deferred via setTimeout).
   // Ordering, bidding, submitting then only works via visible clicks with the user's permission.
   // Guard rail, not a sandbox – the tab debugger does not see WebSocket messages or service worker requests.
+  // With clicking and typing turned off, scripts stay read-only everywhere; scriptWrites turns the guard off on such sites.
+  // On data: and about:blank pages (no website to approve) the guard is always on.
+  // In a tab the user shared, the user keeps working in it: there the guard ends GUARD_TAIL_MS after the script,
+  // so the page's own requests (the user's) go through again.
   async javascript({ tabId, text }) {
-    const st = state(tabId);
-    if (!st.jsGuard && !(await siteAllowed(tabId))) {
+    const st = state(tabId), s = await getSafety();
+    clearTimeout(st.guardTail); // never release while a script runs
+    const web = !!webUrls(await chrome.tabs.get(tabId));
+    if (!st.jsGuard && (!s.act || !web || (!s.scriptWrites && !(await siteAllowed(tabId))))) {
       await cdp(tabId, "Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] });
       st.jsGuard = true;
     }
     st.blocked = [];
-    // Without a user gesture the browser blocks popups – otherwise the script could send from a new window the tab debugger does not see.
-    const r = await cdp(tabId, "Runtime.evaluate", { expression: text, replMode: true, awaitPromise: true, returnByValue: true, userGesture: !st.jsGuard });
+    let r;
+    try {
+      // Without a user gesture the browser blocks popups – otherwise the script could send from a new window the tab debugger does not see.
+      r = await cdp(tabId, "Runtime.evaluate", { expression: text, replMode: true, awaitPromise: true, returnByValue: true, userGesture: !st.jsGuard });
+    } finally {
+      if (st.jsGuard && (await getShared())[tabId] === "user") st.guardTail = setTimeout(() => releaseGuard(tabId), GUARD_TAIL_MS);
+    }
     const note = st.blocked.length
-      ? `\n(Write guard: ${st.blocked.length} modifying request(s) blocked, e.g. ${st.blocked[0]}. This website has ` +
-        "no permission for actions – make changes only via computer/form_input, then the extension asks the user.)"
+      ? `\n(Write guard: ${st.blocked.length} modifying request(s) blocked, e.g. ${st.blocked[0]}. ` + (!web
+        ? "On data: and about:blank pages scripts may only read.)"
+        : s.act
+        ? "This website has no permission for actions – make changes only via computer/form_input, then the extension asks the user.)"
+        : `Clicking and typing are ${OFF_HINT}, so scripts may only read.)`)
       : "";
     if (r.exceptionDetails) throw new Error((r.exceptionDetails.exception?.description ?? r.exceptionDetails.text) + note);
     const v = r.result;
@@ -973,7 +1250,8 @@ const handlers = {
     await assertAllowed(tabId);
     await attach(tabId);
     const st = state(tabId);
-    const redact = (u) => u.replace(/([?&](?:[^=&]*(?:token|key|auth|pass|secret|sig|session|code)[^=&]*)=)[^&#]*/gi, "$1REDACTED");
+    const redact = (u) => u.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/?#@]*@/i, "$1REDACTED@") // user:password@
+      .replace(/([?&](?:[^=&]*(?:token|key|auth|pass|secret|sig|session|code)[^=&]*)=)[^&#]*/gi, "$1REDACTED");
     let reqs = [...st.network.values()];
     // Requests from before the debugger attached (initial page load) come from the page's Performance API.
     const seen = new Set(reqs.map((r) => r.url));
@@ -1081,20 +1359,25 @@ async function connect() {
   };
   sock.onmessage = async (e) => {
     const { id, method, params } = JSON.parse(e.data);
+    const p = params ?? {};
     let reply;
     try {
       if (!handlers[method]) throw new Error(`Unknown command ${method} (extension ${VERSION})`);
       if (!["status", "settings", "reload", "pair_cancel"].includes(method) && (await chrome.storage.local.get("enabled")).enabled === false) {
         throw new Error("Hermes in the browser is turned off – the user can turn it on in the extension options or the Hermes plugin settings");
       }
-      const p = params ?? {};
+      const need = needs(method, p);
+      if (need) await assertCapability(need); // before the site question: no prompt for something that is off anyway
       if (p.tabId != null && isActing(method, p)) await assertSiteAllowed(p.tabId, p.summary);
       if (p.tabId != null && LABELS[method]) await show(p.tabId, { active: true, label: p.summary || LABELS[method] });
       reply = { id, result: await handlers[method](p) };
+      if (p.tabId != null && tabState.get(p.tabId)?.tampered) reply.result = withNote(reply.result, TAMPER_NOTE);
     } catch (err) {
       const msg = String(err?.message ?? err);
       reply = { id, error: OTHER_EXT.test(msg) ? OTHER_EXT_HINT : msg };
     }
+    if (p.sensitive) reply.sensitive = true; // the relay keeps the typed value out of its log
+
     let out = JSON.stringify(reply);
     if (out.length > 8e6) {  // otherwise the WebSocket connection (16 MB) breaks along with all pending requests
       out = JSON.stringify({ id, error: `Result too large (${(out.length / 1e6).toFixed(1)} MB) – reduce max_chars or region` });

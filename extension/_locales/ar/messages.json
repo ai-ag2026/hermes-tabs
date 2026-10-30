@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "يقول Hermes: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "يطلب Hermes الإذن"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "رمز الوصول إلى خادم الترحيل (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "صلاحيات كاملة"
+  },
+  "overlayPasswords": {
+    "message": "يمكنه إدخال كلمات المرور"
+  },
+  "looseTitle": {
+    "message": "السماح لـ Hermes بالمزيد؟"
+  },
+  "looseText": {
+    "message": "يريد تغيير في الإعدادات السماح بما يلي: $LIST$. لا تؤكد إلا إذا أجريت هذا التغيير بنفسك (مثلًا في إعدادات Hermes).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "اسمح"
+  },
+  "looseDecline": {
+    "message": "ارفض"
+  },
+  "looseEnabled": {
+    "message": "تشغيل Hermes في المتصفح"
+  },
+  "looseUnblock": {
+    "message": "إلغاء حظر $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "الأمان"
+  },
+  "optSafetyHelp": {
+    "message": "ما يمكن لـ Hermes فعله في علامات تبويبه. تغيير مفتاح واحد يجعل الإعداد مخصصًا."
+  },
+  "tier_read": {
+    "message": "القراءة فقط"
+  },
+  "tier_read_desc": {
+    "message": "القراءة والبحث ولقطات الشاشة والتمرير في علامات تبويبه والعلامات المشتركة. لا نقر ولا كتابة ولا نصوص برمجية ولا فتح صفحات."
+  },
+  "tier_standard": {
+    "message": "قياسي"
+  },
+  "tier_standard_desc": {
+    "message": "النقر والكتابة وفتح الصفحات وتشغيل النصوص البرمجية والرفع. بلا كلمات مرور؛ والنصوص البرمجية تقرأ فقط في المواقع غير المأذون لها."
+  },
+  "tier_extended": {
+    "message": "موسّع"
+  },
+  "tier_extended_desc": {
+    "message": "مثل القياسي، بالإضافة إلى: يمكن للنصوص البرمجية التغيير في كل مكان، والكتابة في الإطارات المضمّنة من مواقع أخرى، وإغلاق علامات التبويب المشتركة."
+  },
+  "tier_full": {
+    "message": "صلاحيات كاملة"
+  },
+  "tier_full_desc": {
+    "message": "كل شيء، بما في ذلك إدخال كلمات المرور، ودون سؤال لكل موقع."
+  },
+  "tier_custom": {
+    "message": "مخصص"
+  },
+  "tier_custom_desc": {
+    "message": "تركيبتك الخاصة من المفاتيح أدناه."
+  },
+  "safety_act": {
+    "message": "النقر والكتابة"
+  },
+  "safety_act_desc": {
+    "message": "النقرات والكتابة والمفاتيح وحقول النماذج وتأكيد مربعات الحوار."
+  },
+  "safety_js": {
+    "message": "تشغيل النصوص البرمجية"
+  },
+  "safety_js_desc": {
+    "message": "أداة javascript."
+  },
+  "safety_navigate": {
+    "message": "فتح الصفحات"
+  },
+  "safety_navigate_desc": {
+    "message": "فتح علامات تبويب جديدة وتحميل العناوين."
+  },
+  "safety_upload": {
+    "message": "رفع الملفات"
+  },
+  "safety_upload_desc": {
+    "message": "وضع الملفات ولقطات الشاشة في حقول الملفات."
+  },
+  "safety_download": {
+    "message": "التنزيلات"
+  },
+  "safety_download_desc": {
+    "message": "حفظ التسجيلات (GIF) في مجلد التنزيلات."
+  },
+  "safety_devtools": {
+    "message": "وحدة التحكم والشبكة"
+  },
+  "safety_devtools_desc": {
+    "message": "قراءة رسائل وحدة التحكم وطلبات الشبكة."
+  },
+  "safety_scriptWrites": {
+    "message": "يمكن للنصوص البرمجية التغيير في كل مكان"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "عند الإيقاف: في المواقع غير المأذون لها يمكن للنصوص البرمجية القراءة فقط (لا إرسال ولا نوافذ منبثقة)."
+  },
+  "safety_frameTyping": {
+    "message": "الكتابة في الإطارات المضمّنة"
+  },
+  "safety_frameTyping_desc": {
+    "message": "الكتابة في إطارات مواقع أخرى، وغالبًا ما تكون أدوات تسجيل الدخول والدفع."
+  },
+  "safety_passwords": {
+    "message": "إدخال كلمات المرور"
+  },
+  "safety_passwords_desc": {
+    "message": "الكتابة في حقول كلمات المرور. سيتمكن Hermes عندها من إدخال بيانات الدخول الموجودة في الدردشة أو في سياقه."
+  },
+  "safety_closeShared": {
+    "message": "إغلاق علامات التبويب المشتركة"
+  },
+  "safety_closeShared_desc": {
+    "message": "إغلاق علامات التبويب التي شاركتها أيضًا، وليس علاماته فقط."
+  },
+  "warnLoosen": {
+    "message": "سيحصل Hermes على صلاحيات أكثر: $LIST$. هل تريد المتابعة؟",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "تنبيه: سيتمكن Hermes عندها من إدخال بيانات الدخول الموجودة في الدردشة أو في سياقه، مثل كلمات المرور التي أخبرته بها أو التي قرأها في مكان ما. لا تفعّل هذا إلا إذا كان على Hermes تسجيل الدخول نيابةً عنك."
+  },
+  "tamperTitle": {
+    "message": "الصفحة تخفي طبقة عرض Hermes"
+  },
+  "tamperText": {
+    "message": "يزيل $HOST$ طبقة عرض Hermes مرارًا، لذا قد لا ترى ما يفعله Hermes في علامة التبويب. إن ساورك الشك فأوقفه عبر أيقونة شريط الأدوات.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

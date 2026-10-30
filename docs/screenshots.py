@@ -80,7 +80,7 @@ async def take(lang):
         print(await sw_eval(f"chrome.tabs.create({{url: {json.dumps(ARTICLE[lang])}}}).then(async (t) => {{"
                             " await new Promise((r) => setTimeout(r, 4000)); await setShared(t.id, 'user');"
                             " await page(t.id, 'overlay', {active: true, x: 330, y: 300, label: ACTION_LABELS.left_click, t: OVERLAY_TEXT, logo: await LOGO});"
-                            f" await show(t.id, {{ask: msg('askText', new URL(t.pendingUrl || t.url).host) + ': ' + {summary}}}); return t.id; }}).catch(String)"))
+                            f" await show(t.id, {{ask: msg('askText', new URL(t.pendingUrl || t.url).host), say: msg('askSays', {summary})}}); return t.id; }}).catch(String)"))
         await asyncio.sleep(1)
         await shoot("wikipedia.org", HERE / f"consent-{lang}.png")
     finally:

@@ -46,6 +46,9 @@ OWN_HOSTS = tuple(h.strip().lower() for h in os.environ.get("HERMES_TABS_OWN_HOS
 BROWSER_TOOLS = ("browser_exec", "browser_cdp", "web_extract")
 URL_RE = re.compile(r"(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,}|\d{1,3}(?:\.\d{1,3}){3})(?=[:/\s\"'?#]|$)", re.I)
 
+# Settings the settings page may write (the extension decides which changes need the human's confirmation).
+KEYS = {"enabled", "siteMode", "allowAll", "sites", "blockedSites", "safety"}
+
 _cache: Dict[str, Any] = {"at": 0.0, "settings": None}
 
 

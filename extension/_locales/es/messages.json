@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes dice: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes solicita permiso"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "Token de acceso del relay (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "Todos los derechos"
+  },
+  "overlayPasswords": {
+    "message": "Puede introducir contraseñas"
+  },
+  "looseTitle": {
+    "message": "¿Permitir más a Hermes?"
+  },
+  "looseText": {
+    "message": "Un cambio de la configuración quiere permitir: $LIST$. Confirma solo si lo hiciste tú (p. ej. en la configuración de Hermes).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "Permitir"
+  },
+  "looseDecline": {
+    "message": "Rechazar"
+  },
+  "looseEnabled": {
+    "message": "Activar Hermes en el navegador"
+  },
+  "looseUnblock": {
+    "message": "Desbloquear $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "Seguridad"
+  },
+  "optSafetyHelp": {
+    "message": "Cuánto puede hacer Hermes en sus pestañas. Cambiar un solo interruptor crea una configuración propia."
+  },
+  "tier_read": {
+    "message": "Solo lectura"
+  },
+  "tier_read_desc": {
+    "message": "Leer, buscar, hacer capturas y desplazarse en sus pestañas y en las compartidas. Sin clics, escritura, scripts ni abrir páginas."
+  },
+  "tier_standard": {
+    "message": "Estándar"
+  },
+  "tier_standard_desc": {
+    "message": "Hacer clic, escribir, abrir páginas, ejecutar scripts, subir archivos. Sin contraseñas; en sitios sin permiso los scripts solo leen."
+  },
+  "tier_extended": {
+    "message": "Ampliado"
+  },
+  "tier_extended_desc": {
+    "message": "Como Estándar y además: los scripts pueden cambiar cosas en todas partes, escribir en marcos incrustados de otros sitios, cerrar pestañas compartidas."
+  },
+  "tier_full": {
+    "message": "Todos los derechos"
+  },
+  "tier_full_desc": {
+    "message": "Todo, incluido introducir contraseñas, y sin preguntar por sitio."
+  },
+  "tier_custom": {
+    "message": "Propia"
+  },
+  "tier_custom_desc": {
+    "message": "Tu propia combinación de los interruptores de abajo."
+  },
+  "safety_act": {
+    "message": "Hacer clic y escribir"
+  },
+  "safety_act_desc": {
+    "message": "Clics, escritura, teclas, campos de formulario, confirmar diálogos."
+  },
+  "safety_js": {
+    "message": "Ejecutar scripts"
+  },
+  "safety_js_desc": {
+    "message": "La herramienta javascript."
+  },
+  "safety_navigate": {
+    "message": "Abrir páginas"
+  },
+  "safety_navigate_desc": {
+    "message": "Abrir pestañas nuevas y cargar direcciones."
+  },
+  "safety_upload": {
+    "message": "Subir archivos"
+  },
+  "safety_upload_desc": {
+    "message": "Poner archivos y capturas en campos de archivo."
+  },
+  "safety_download": {
+    "message": "Descargas"
+  },
+  "safety_download_desc": {
+    "message": "Guardar grabaciones (GIF) en la carpeta de descargas."
+  },
+  "safety_devtools": {
+    "message": "Consola y red"
+  },
+  "safety_devtools_desc": {
+    "message": "Leer mensajes de la consola y solicitudes de red."
+  },
+  "safety_scriptWrites": {
+    "message": "Los scripts pueden cambiar cosas en todas partes"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "Desactivado: en sitios sin permiso, los scripts solo pueden leer (sin envíos ni ventanas emergentes)."
+  },
+  "safety_frameTyping": {
+    "message": "Escribir en marcos incrustados"
+  },
+  "safety_frameTyping_desc": {
+    "message": "Escribir en marcos de otros sitios, a menudo widgets de inicio de sesión y de pago."
+  },
+  "safety_passwords": {
+    "message": "Introducir contraseñas"
+  },
+  "safety_passwords_desc": {
+    "message": "Escribir en campos de contraseña. Hermes podrá introducir credenciales que estén en el chat o en su contexto."
+  },
+  "safety_closeShared": {
+    "message": "Cerrar pestañas compartidas"
+  },
+  "safety_closeShared_desc": {
+    "message": "Cerrar también las pestañas que compartiste, no solo las suyas."
+  },
+  "warnLoosen": {
+    "message": "Hermes obtiene más derechos: $LIST$. ¿Continuar?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Atención: Hermes podrá introducir credenciales que estén en el chat o en su contexto, por ejemplo contraseñas que le diste o que leyó en algún sitio. Actívalo solo si Hermes debe iniciar sesión por ti."
+  },
+  "tamperTitle": {
+    "message": "La página oculta la superposición de Hermes"
+  },
+  "tamperText": {
+    "message": "$HOST$ elimina una y otra vez la superposición de Hermes, así que quizá no veas lo que Hermes hace en la pestaña. Si dudas, detenlo con el icono de la barra de herramientas.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

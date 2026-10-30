@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes говорит: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes запрашивает разрешение"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "Токен доступа relay-сервера (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "Полные права"
+  },
+  "overlayPasswords": {
+    "message": "Может вводить пароли"
+  },
+  "looseTitle": {
+    "message": "Разрешить Hermes больше?"
+  },
+  "looseText": {
+    "message": "Изменение настроек хочет разрешить: $LIST$. Подтверждайте, только если вы сделали его сами (например, в настройках Hermes).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "Разрешить"
+  },
+  "looseDecline": {
+    "message": "Отклонить"
+  },
+  "looseEnabled": {
+    "message": "Включить Hermes в браузере"
+  },
+  "looseUnblock": {
+    "message": "Разблокировать $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "Безопасность"
+  },
+  "optSafetyHelp": {
+    "message": "Что Hermes может делать в своих вкладках. Изменение отдельного переключателя создаёт собственную настройку."
+  },
+  "tier_read": {
+    "message": "Только чтение"
+  },
+  "tier_read_desc": {
+    "message": "Чтение, поиск, снимки экрана и прокрутка в своих и общих вкладках. Без щелчков, ввода, скриптов и открытия страниц."
+  },
+  "tier_standard": {
+    "message": "Стандарт"
+  },
+  "tier_standard_desc": {
+    "message": "Щелчки, ввод, открытие страниц, скрипты, загрузка файлов. Без паролей; на сайтах без разрешения скрипты только читают."
+  },
+  "tier_extended": {
+    "message": "Расширенный"
+  },
+  "tier_extended_desc": {
+    "message": "Как «Стандарт», а также: скрипты могут изменять всё, ввод во встроенных фреймах других сайтов, закрытие общих вкладок."
+  },
+  "tier_full": {
+    "message": "Полные права"
+  },
+  "tier_full_desc": {
+    "message": "Всё, включая ввод паролей, без вопросов для каждого сайта."
+  },
+  "tier_custom": {
+    "message": "Собственный"
+  },
+  "tier_custom_desc": {
+    "message": "Ваша собственная комбинация переключателей ниже."
+  },
+  "safety_act": {
+    "message": "Щелчки и ввод"
+  },
+  "safety_act_desc": {
+    "message": "Щелчки, ввод текста, клавиши, поля форм, подтверждение диалогов."
+  },
+  "safety_js": {
+    "message": "Запуск скриптов"
+  },
+  "safety_js_desc": {
+    "message": "Инструмент javascript."
+  },
+  "safety_navigate": {
+    "message": "Открытие страниц"
+  },
+  "safety_navigate_desc": {
+    "message": "Открывать новые вкладки и загружать адреса."
+  },
+  "safety_upload": {
+    "message": "Загрузка файлов"
+  },
+  "safety_upload_desc": {
+    "message": "Помещать файлы и снимки экрана в поля выбора файлов."
+  },
+  "safety_download": {
+    "message": "Скачивание"
+  },
+  "safety_download_desc": {
+    "message": "Сохранять записи (GIF) в папку загрузок."
+  },
+  "safety_devtools": {
+    "message": "Консоль и сеть"
+  },
+  "safety_devtools_desc": {
+    "message": "Читать сообщения консоли и сетевые запросы."
+  },
+  "safety_scriptWrites": {
+    "message": "Скрипты могут изменять всё"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "Выключено: на сайтах без разрешения скрипты могут только читать (без отправки и всплывающих окон)."
+  },
+  "safety_frameTyping": {
+    "message": "Ввод во встроенных фреймах"
+  },
+  "safety_frameTyping_desc": {
+    "message": "Ввод во фреймы других сайтов, часто это формы входа и оплаты."
+  },
+  "safety_passwords": {
+    "message": "Ввод паролей"
+  },
+  "safety_passwords_desc": {
+    "message": "Ввод в поля паролей. Hermes сможет вводить учётные данные, которые есть в чате или в его контексте."
+  },
+  "safety_closeShared": {
+    "message": "Закрытие общих вкладок"
+  },
+  "safety_closeShared_desc": {
+    "message": "Закрывать и вкладки, которыми вы поделились, а не только свои."
+  },
+  "warnLoosen": {
+    "message": "Hermes получит больше прав: $LIST$. Продолжить?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Внимание: Hermes сможет вводить учётные данные, которые есть в чате или в его контексте, например пароли, которые вы ему сообщили или которые он где-то прочитал. Включайте это, только если Hermes должен входить в аккаунты за вас."
+  },
+  "tamperTitle": {
+    "message": "Страница скрывает индикацию Hermes"
+  },
+  "tamperText": {
+    "message": "$HOST$ постоянно убирает индикацию Hermes – вы можете не видеть, что Hermes делает во вкладке. При сомнении остановите его значком на панели инструментов.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

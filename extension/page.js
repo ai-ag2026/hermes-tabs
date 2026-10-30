@@ -118,7 +118,7 @@ function HERMES_PAGE(op, arg) {
     s += ` [${refOf(el)}]`;
     if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
       if (el.type === "checkbox" || el.type === "radio") s += el.checked ? " checked" : " unchecked";
-      else if (el.type !== "file" && el.type !== "password" && el.value) s += ` value="${clip(el.value, 80)}"`;
+      else if (el.type !== "file" && !isPassword(el) && el.value) s += ` value="${clip(el.value, 80)}"`;
       if (el.tagName === "INPUT" && !["text", "checkbox", "radio", "submit", "button"].includes(el.type)) s += ` type=${el.type}`;
       const ph = el.getAttribute("placeholder");
       if (ph && ph !== n) s += ` placeholder="${clip(ph, 80)}"`;
@@ -296,15 +296,21 @@ function HERMES_PAGE(op, arg) {
 
   const fire = (el, type) => el.dispatchEvent(new Event(type, { bubbles: true }));
 
-  const formInput = ({ ref, value }) => {
-    const el = byRef(ref);
+  // Password fields only with the safety switch "passwords"; the answer says it was one, so the relay hides the value.
+  const formInput = (arg) => {
+    const el = byRef(arg.ref);
+    if (!isPassword(el)) return setField(el, arg);
+    if (!arg.passwords) return { password: true, refused: true };
+    return { password: true, text: setField(el, arg) };
+  };
+
+  const setField = (el, { ref, value }) => {
     const win = el.ownerDocument.defaultView;
     // What a human could not change, Hermes does not change either (and does not report it as success).
     if (el.disabled || el.closest?.("fieldset[disabled]") || el.getAttribute("aria-disabled") === "true") {
       throw new Error(`${ref} is disabled`);
     }
     if (el.readOnly || el.getAttribute("aria-readonly") === "true") throw new Error(`${ref} is read-only`);
-    if (isPassword(el)) throw new Error(`${ref} is a password field – Hermes does not enter credentials, the user does that`);
     if (el.tagName === "SELECT") {
       const vals = Array.isArray(value) ? value.map(String) : [String(value)];
       const opts = [...el.options].filter((o) => !o.disabled && (vals.includes(o.value) || vals.includes(o.text.trim())));
@@ -416,12 +422,41 @@ function HERMES_PAGE(op, arg) {
   // Closed shadow DOM: page CSS does not apply inside, and the page cannot reach the buttons.
   // Answers go via the debugger binding __hermesTabs, which exists only in this isolated world.
   // Texts (o.t) come localized from background.js; the isolated world has no chrome.i18n.
+  // The page can see the host element while it is shown and may try to remove it or overwrite its style. Each overlay
+  // call and a MutationObserver (in this isolated world) put it back – at most FIX_LIMIT times per second, then
+  // Hermes gives up and reports it ("tampered") instead of fighting the page forever.
+  const FIX_LIMIT = 10;
+  const fixHost = (host) => {
+    if (!host.isConnected) {
+      document.documentElement.append(host);
+      if (!TOP.__hermesTampered) TOP.__hermesMo?.observe(document.documentElement, { childList: true }); // <html> may be new
+    }
+    // !important inline: page rules cannot hide, dim or move the host (opacity, filter, transform, ...)
+    host.style.cssText = "all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; " +
+      `pointer-events: none !important; visibility: ${TOP.__hermesHidden ? "hidden" : "visible"} !important;`;
+    TOP.__hermesCss = host.style.cssText;
+  };
+  const guardHost = (host) => {
+    const fixes = [];
+    const mo = new MutationObserver(() => {
+      if (TOP.__hermesOverlay !== host) return mo.disconnect();
+      if (host.isConnected && host.style.cssText === TOP.__hermesCss) return;
+      const now = Date.now();
+      while (fixes.length && now - fixes[0] > 1000) fixes.shift();
+      if (fixes.length >= FIX_LIMIT) { TOP.__hermesTampered = true; return mo.disconnect(); }
+      fixes.push(now);
+      fixHost(host);
+    });
+    mo.observe(host, { attributes: true, attributeFilter: ["style"] });
+    mo.observe(document.documentElement, { childList: true });
+    TOP.__hermesMo = mo;
+  };
   const overlay = (o) => {
     let host = TOP.__hermesOverlay;
-    if (!host || !host.isConnected) {
+    if (o.hidden !== undefined) TOP.__hermesHidden = o.hidden;
+    if (host) fixHost(host);
+    if (!host) {
       host = document.createElement("hermes-tabs-overlay");
-      // !important inline: page rules cannot hide, dim or move the host (opacity, filter, transform, ...)
-      host.style.cssText = "all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;";
       const root = host.attachShadow({ mode: "closed" });
       // Colours: Hermes desktop default theme ("nous"), light and dark, resolved to fixed values. Set on every
       // element, not only :host - page rules on the host element would override custom properties defined there.
@@ -455,19 +490,23 @@ function HERMES_PAGE(op, arg) {
                  background: var(--ctl); color: var(--fg); }
         button:hover { background: var(--ctl-hover); }
         .stop, .stop:hover { background: var(--danger); color: #fff; }
+        .warn { color: var(--danger); font-weight: 600; }
+        .warn:empty { display: none; }
         .once, .once:hover { background: var(--accent); color: var(--on-accent); }
         .ask { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); display: none; width: max-content; max-width: min(600px, calc(100vw - 24px));
                padding: 12px; pointer-events: auto; border-top: 2px solid var(--accent); }
         .ask .head { display: flex; align-items: center; gap: 10px; }
         .q { font-weight: 600; }
+        .say { margin-top: 8px; font-style: italic; overflow-wrap: anywhere; }
+        .say:empty { display: none; }
         .ask .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; justify-content: flex-end; }
         .hidden { display: none !important; }
       </style>
       <div class="frame"></div><div class="ring"></div>
       <svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7.5 19 2.4-7.6L20.5 11z" stroke="#fff" stroke-width="1.5"/></svg>
       <div class="label"></div>
-      <div class="bar"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><span class="barText"></span><button class="stop"></button></div>
-      <div class="ask"><div class="head"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><div class="q"></div></div><div class="row">
+      <div class="bar"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><span class="barText"></span><span class="warn"></span><button class="stop"></button></div>
+      <div class="ask"><div class="head"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><div class="q"></div></div><div class="say"></div><div class="row">
         <button class="deny"></button><button class="once"></button><button class="session"></button>
         <button class="always"></button><button class="all1h"></button></div></div>`;
       const t = o.t ?? {};
@@ -489,13 +528,14 @@ function HERMES_PAGE(op, arg) {
       };
       root.querySelector(".stop").addEventListener("click", send({ type: "stop" }), true);
       for (const d of ["deny", "once", "session", "always", "all1h"]) root.querySelector("." + d).addEventListener("click", send({ type: "permission", decision: d }), true);
-      document.documentElement.append(host);
       TOP.__hermesOverlay = host;
       TOP.__hermesRoot = root;
+      fixHost(host);
+      guardHost(host);
     }
     const root = TOP.__hermesRoot, $ = (c) => root.querySelector(c);
-    if (o.hidden !== undefined) host.style.setProperty("visibility", o.hidden ? "hidden" : "visible", "important");
     if (o.passthrough !== undefined) setPassthrough(root, o.passthrough);
+    if (o.warn !== undefined) $(".warn").textContent = o.warn; // e.g. "Full rights" while the safety tier is full
     if (o.active) {
       $(".frame").style.opacity = 1;
       $(".bar").style.display = "flex";
@@ -520,10 +560,10 @@ function HERMES_PAGE(op, arg) {
     }
     if (o.ask !== undefined) {
       $(".ask").style.display = o.ask ? "block" : "none";
-      if (o.ask) $(".q").textContent = o.ask;
+      if (o.ask) { $(".q").textContent = o.ask; $(".say").textContent = o.say ?? ""; }
     }
-    if (o.remove) { host.remove(); TOP.__hermesOverlay = null; }
-    return "ok";
+    if (o.remove) { TOP.__hermesOverlay = null; host.remove(); }
+    return TOP.__hermesTampered ? "tampered" : "ok";
   };
   // While Hermes itself clicks, the overlay must not catch clicks (otherwise Hermes might hit "Stop").
   const setPassthrough = (root, on) => {
@@ -546,7 +586,10 @@ function HERMES_PAGE(op, arg) {
     }
     const editable = !!el && ((el.tagName === "INPUT" && !/^(button|submit|reset|checkbox|radio|file|image|range|color|hidden)$/i.test(el.type)) ||
       el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
-    return { tag: el?.tagName ?? null, type: el?.type ?? null, password: isPassword(el), opaque, editable };
+    // Sign-in field: arrow keys there can pick a login the browser saved (autofill).
+    const login = !!el && (/\b(username|email)\b/i.test(el.getAttribute?.("autocomplete") ?? "") ||
+      [...(el.form?.elements ?? [])].some(isPassword));
+    return { tag: el?.tagName ?? null, type: el?.type ?? null, password: isPassword(el), opaque, editable, login };
   };
 
   switch (op) {

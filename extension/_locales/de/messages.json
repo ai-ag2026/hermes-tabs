@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes sagt: $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes bittet um Freigabe"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "Zugangs-Token des Relays (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "Volle Rechte"
+  },
+  "overlayPasswords": {
+    "message": "Darf Passwörter eingeben"
+  },
+  "looseTitle": {
+    "message": "Hermes mehr erlauben?"
+  },
+  "looseText": {
+    "message": "Eine Änderung der Einstellungen will erlauben: $LIST$. Bestätige nur, wenn du sie selbst vorgenommen hast (z. B. in den Hermes-Einstellungen).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "Erlauben"
+  },
+  "looseDecline": {
+    "message": "Ablehnen"
+  },
+  "looseEnabled": {
+    "message": "Hermes im Browser einschalten"
+  },
+  "looseUnblock": {
+    "message": "$DOMAIN$ nicht mehr sperren",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "Sicherheit"
+  },
+  "optSafetyHelp": {
+    "message": "Wie viel Hermes in seinen Tabs darf. Wer einen einzelnen Schalter ändert, hat eine eigene Einstellung."
+  },
+  "tier_read": {
+    "message": "Nur lesen"
+  },
+  "tier_read_desc": {
+    "message": "Lesen, suchen, Screenshots und Scrollen in eigenen und freigegebenen Tabs. Kein Klicken, Tippen, keine Skripte, keine Seiten öffnen."
+  },
+  "tier_standard": {
+    "message": "Standard"
+  },
+  "tier_standard_desc": {
+    "message": "Klicken, tippen, Seiten öffnen, Skripte, Uploads. Keine Passwörter; Skripte lesen auf nicht freigegebenen Websites nur."
+  },
+  "tier_extended": {
+    "message": "Erweitert"
+  },
+  "tier_extended_desc": {
+    "message": "Wie Standard, dazu: Skripte dürfen überall ändern, Tippen in eingebetteten Frames anderer Websites, freigegebene Tabs schließen."
+  },
+  "tier_full": {
+    "message": "Volle Rechte"
+  },
+  "tier_full_desc": {
+    "message": "Alles, auch Passwörter eingeben, und keine Rückfrage je Website."
+  },
+  "tier_custom": {
+    "message": "Eigene"
+  },
+  "tier_custom_desc": {
+    "message": "Deine eigene Kombination der Schalter unten."
+  },
+  "safety_act": {
+    "message": "Klicken und tippen"
+  },
+  "safety_act_desc": {
+    "message": "Klicks, Tippen, Tasten, Formularfelder, Dialoge bestätigen."
+  },
+  "safety_js": {
+    "message": "Skripte ausführen"
+  },
+  "safety_js_desc": {
+    "message": "Das Werkzeug javascript."
+  },
+  "safety_navigate": {
+    "message": "Seiten öffnen"
+  },
+  "safety_navigate_desc": {
+    "message": "Neue Tabs öffnen und Adressen laden."
+  },
+  "safety_upload": {
+    "message": "Dateien hochladen"
+  },
+  "safety_upload_desc": {
+    "message": "Dateien und Screenshots in Dateifelder legen."
+  },
+  "safety_download": {
+    "message": "Downloads"
+  },
+  "safety_download_desc": {
+    "message": "Aufnahmen (GIF) im Download-Ordner speichern."
+  },
+  "safety_devtools": {
+    "message": "Konsole und Netzwerk"
+  },
+  "safety_devtools_desc": {
+    "message": "Konsolenmeldungen und Netzwerkanfragen lesen."
+  },
+  "safety_scriptWrites": {
+    "message": "Skripte dürfen überall ändern"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "Aus: Auf Websites ohne Freigabe können Skripte nur lesen (nichts senden, keine Popups)."
+  },
+  "safety_frameTyping": {
+    "message": "In eingebetteten Frames tippen"
+  },
+  "safety_frameTyping_desc": {
+    "message": "Tippen in Frames anderer Websites, oft Anmelde- und Bezahlfelder."
+  },
+  "safety_passwords": {
+    "message": "Passwörter eingeben"
+  },
+  "safety_passwords_desc": {
+    "message": "Tippen in Passwortfelder. Hermes kann dann Zugangsdaten eingeben, die im Chat oder seinem Kontext stehen."
+  },
+  "safety_closeShared": {
+    "message": "Freigegebene Tabs schließen"
+  },
+  "safety_closeShared_desc": {
+    "message": "Auch von dir freigegebene Tabs schließen, nicht nur eigene."
+  },
+  "warnLoosen": {
+    "message": "Hermes bekommt mehr Rechte: $LIST$. Fortfahren?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Achtung: Hermes kann dann Zugangsdaten eingeben, die im Chat oder seinem Kontext stehen – etwa Passwörter, die du ihm genannt hast oder die es irgendwo gelesen hat. Schalte das nur ein, wenn Hermes sich für dich anmelden soll."
+  },
+  "tamperTitle": {
+    "message": "Die Seite versteckt die Hermes-Einblendung"
+  },
+  "tamperText": {
+    "message": "$HOST$ entfernt die Hermes-Einblendung immer wieder – du siehst im Tab womöglich nicht, was Hermes tut. Im Zweifel über das Symbol in der Werkzeugleiste stoppen.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

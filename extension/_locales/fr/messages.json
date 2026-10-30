@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes dit : $TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes demande une autorisation"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "Jeton d'accès du relais (HERMES_TABS_TOKEN)."
+  },
+  "overlayFull": {
+    "message": "Tous les droits"
+  },
+  "overlayPasswords": {
+    "message": "Peut saisir des mots de passe"
+  },
+  "looseTitle": {
+    "message": "Autoriser davantage Hermes ?"
+  },
+  "looseText": {
+    "message": "Une modification des paramètres veut autoriser : $LIST$. Confirmez uniquement si vous l'avez faite vous-même (par ex. dans les paramètres de Hermes).",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "Autoriser"
+  },
+  "looseDecline": {
+    "message": "Refuser"
+  },
+  "looseEnabled": {
+    "message": "Activer Hermes dans le navigateur"
+  },
+  "looseUnblock": {
+    "message": "Débloquer $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "Sécurité"
+  },
+  "optSafetyHelp": {
+    "message": "Ce que Hermes peut faire dans ses onglets. Modifier un seul interrupteur crée un réglage personnalisé."
+  },
+  "tier_read": {
+    "message": "Lecture seule"
+  },
+  "tier_read_desc": {
+    "message": "Lire, rechercher, faire des captures d'écran et défiler dans ses onglets et les onglets partagés. Pas de clic, de saisie, de scripts ni d'ouverture de pages."
+  },
+  "tier_standard": {
+    "message": "Standard"
+  },
+  "tier_standard_desc": {
+    "message": "Cliquer, saisir, ouvrir des pages, exécuter des scripts, téléverser. Pas de mots de passe ; les scripts ne font que lire sur les sites non autorisés."
+  },
+  "tier_extended": {
+    "message": "Étendu"
+  },
+  "tier_extended_desc": {
+    "message": "Comme Standard, plus : les scripts peuvent modifier partout, saisie dans les cadres intégrés d'autres sites, fermeture des onglets partagés."
+  },
+  "tier_full": {
+    "message": "Tous les droits"
+  },
+  "tier_full_desc": {
+    "message": "Tout, y compris la saisie de mots de passe, sans question par site."
+  },
+  "tier_custom": {
+    "message": "Personnalisé"
+  },
+  "tier_custom_desc": {
+    "message": "Votre propre combinaison des interrupteurs ci-dessous."
+  },
+  "safety_act": {
+    "message": "Cliquer et saisir"
+  },
+  "safety_act_desc": {
+    "message": "Clics, saisie, touches, champs de formulaire, confirmation de boîtes de dialogue."
+  },
+  "safety_js": {
+    "message": "Exécuter des scripts"
+  },
+  "safety_js_desc": {
+    "message": "L'outil javascript."
+  },
+  "safety_navigate": {
+    "message": "Ouvrir des pages"
+  },
+  "safety_navigate_desc": {
+    "message": "Ouvrir de nouveaux onglets et charger des adresses."
+  },
+  "safety_upload": {
+    "message": "Téléverser des fichiers"
+  },
+  "safety_upload_desc": {
+    "message": "Placer des fichiers et des captures d'écran dans des champs de fichier."
+  },
+  "safety_download": {
+    "message": "Téléchargements"
+  },
+  "safety_download_desc": {
+    "message": "Enregistrer les enregistrements (GIF) dans le dossier de téléchargement."
+  },
+  "safety_devtools": {
+    "message": "Console et réseau"
+  },
+  "safety_devtools_desc": {
+    "message": "Lire les messages de la console et les requêtes réseau."
+  },
+  "safety_scriptWrites": {
+    "message": "Les scripts peuvent modifier partout"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "Désactivé : sur les sites non autorisés, les scripts ne peuvent que lire (pas d'envoi, pas de popups)."
+  },
+  "safety_frameTyping": {
+    "message": "Saisir dans les cadres intégrés"
+  },
+  "safety_frameTyping_desc": {
+    "message": "Saisie dans les cadres d'autres sites, souvent des widgets de connexion ou de paiement."
+  },
+  "safety_passwords": {
+    "message": "Saisir des mots de passe"
+  },
+  "safety_passwords_desc": {
+    "message": "Saisie dans les champs de mot de passe. Hermes peut alors saisir des identifiants présents dans le chat ou son contexte."
+  },
+  "safety_closeShared": {
+    "message": "Fermer les onglets partagés"
+  },
+  "safety_closeShared_desc": {
+    "message": "Fermer aussi les onglets que vous avez partagés, pas seulement les siens."
+  },
+  "warnLoosen": {
+    "message": "Hermes obtient davantage de droits : $LIST$. Continuer ?",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "Attention : Hermes pourra alors saisir des identifiants présents dans le chat ou son contexte – par exemple des mots de passe que vous lui avez donnés ou qu'il a lus quelque part. Activez cette option uniquement si Hermes doit se connecter à votre place."
+  },
+  "tamperTitle": {
+    "message": "La page masque l’incrustation de Hermes"
+  },
+  "tamperText": {
+    "message": "$HOST$ retire sans cesse l’incrustation de Hermes : vous ne voyez peut-être pas ce que Hermes fait dans l’onglet. En cas de doute, arrêtez-le avec l’icône de la barre d’outils.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

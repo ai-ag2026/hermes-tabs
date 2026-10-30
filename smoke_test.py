@@ -216,9 +216,32 @@ async def page_eval(url_part, expression):
     return m["result"]["result"].get("value")
 
 
+def admin(token, body=None):
+    """GET or POST /admin/settings. A POST that loosens something blocks until the browser's confirmation is answered
+    (run it via asyncio.to_thread then)."""
+    req = urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/settings", method="POST" if body else "GET",
+                                 data=json.dumps(body).encode() if body else None,
+                                 headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req))
+
+
+async def admin_answered(body, answer="confirmed"):
+    """POST /admin/settings with a loosening change and answer the browser's confirmation as the user would
+    (the notification buttons call the same resolve)."""
+    task = asyncio.ensure_future(asyncio.to_thread(admin, ADMIN, body))
+    for _ in range(100):
+        if await sw_eval("looseAsk !== null"):
+            break
+        await asyncio.sleep(0.1)
+    await sw_eval(f"looseAsk.resolve({json.dumps(answer)}), 1")
+    st = await task
+    assert st["confirmation"] == answer, st
+    return st
+
+
 async def permissions(t: T, base: str):
     """Visible, stoppable, actions only with per-site permission, no passwords, scripts read-only."""
-    await sw_eval("chrome.storage.local.set({siteMode: 'ask', permTimeoutMs: 4000, allowedSites: {}}).then(() => 1)")
+    await sw_eval("chrome.storage.local.set({siteMode: 'ask', permTimeoutMs: 4000, confirmTimeoutMs: 2000, allowedSites: {}}).then(() => 1)")
     tid = json.loads(await t("tabs_create", url=f"{base}/two.html?p1"))["tabId"]
     js = lambda code: t("javascript", tabId=tid, text=code)
     await js("document.body.insertAdjacentHTML('beforeend', '<input type=password id=pw><button id=b onclick=\"window.n=(window.n||0)+1\">B</button>'); 1")
@@ -276,10 +299,18 @@ async def permissions(t: T, base: str):
     await t("computer", tabId=tid, action="left_click", ref=pw)
     r = await t.raw("computer", tabId=tid, action="type", text="secret")
     assert r.is_error and "password field" in r.content[0].text, r.content[0].text
-    for keys in ("ctrl+v", "Enter", "a"):
+    for keys in ("ctrl+v", "Enter", "a", "shift+a", "meta+v", "space"):
         r = await t.raw("computer", tabId=tid, action="key", text=keys)
         assert r.is_error and "password field" in r.content[0].text, (keys, r.content[0].text)
     await t("computer", tabId=tid, action="key", text="Tab")  # leaving the field works
+    # Sign-in form: arrow keys could pick a saved login (autofill); Tab into the password field and typing on is stopped
+    await js("document.body.insertAdjacentHTML('beforeend', '<form id=lf><input id=lu autocomplete=username><input type=password id=lp></form>'); 1")
+    await t("computer", tabId=tid, action="left_click", coordinate=json.loads(await js(center_js("#lu"))))
+    r = await t.raw("computer", tabId=tid, action="key", text="ArrowDown Enter")
+    assert r.is_error and "autofill" in r.content[0].text, r.content[0].text
+    r = await t.raw("computer", tabId=tid, action="key", text="Tab x")
+    assert r.is_error and "password field" in r.content[0].text and "mid-sequence" in r.content[0].text, r.content[0].text
+    assert await js("lp.value") == ""
     await js("pw.type = 'text'; pw.autocomplete = 'current-password'; 1")  # "show password"
     r = await t.raw("form_input", tabId=tid, ref=pw, value="secret")
     assert r.is_error and "password field" in r.content[0].text, r.content[0].text
@@ -291,6 +322,9 @@ async def permissions(t: T, base: str):
     await t("computer", tabId=tid, action="left_click", coordinate=json.loads(await js(center_js("#fx"))))
     r = await t.raw("computer", tabId=tid, action="type", text="1234")
     assert r.is_error and "cross-origin iframe" in r.content[0].text, r.content[0].text
+    for keys in ("shift+a", "meta+v", "ctrl+shift+v", "shift+Insert", "space"):  # keys that produce text or paste
+        r = await t.raw("computer", tabId=tid, action="key", text=keys)
+        assert r.is_error and "cross-origin iframe" in r.content[0].text, (keys, r.content[0].text)
 
     # Stop in the tab: share revoked, Hermes has no more access
     await user_click("two.html?p1", ".stop")
@@ -330,33 +364,175 @@ async def permissions(t: T, base: str):
     r = await t.raw("computer", tabId=tid, action="left_click", coordinate=[5, 5])
     assert r.is_error and "did not respond" in r.content[0].text, r.content[0].text
     # Settings via the relay only with the admin token (Hermes' token is not enough)
-    def admin(token, body=None):
-        req = urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/settings", method="POST" if body else "GET",
-                                     data=json.dumps(body).encode() if body else None,
-                                     headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
-        return json.load(urllib.request.urlopen(req))
     try:
         admin(TOKEN, {"allowAll": "1h"}); raise AssertionError("Hermes token may set permissions")
     except urllib.error.HTTPError as e:
         assert e.code == 401
-    assert admin(ADMIN, {"allowAll": "1h"})["allowAllUntil"]
+    # Loosening needs the user's confirmation in the browser: no answer = nothing changes
+    st = await asyncio.to_thread(admin, ADMIN, {"allowAll": "1h"})
+    assert st["confirmation"] == "expired" and st["loosening"] == ["allowAll:1h"] and st["allowAllUntil"] is None, st
+    assert (await admin_answered({"allowAll": "1h"}))["allowAllUntil"]
     t0 = time.time()
     assert not (await t.raw("computer", tabId=tid, action="left_click", coordinate=[5, 5])).is_error and time.time() - t0 < 3
-    st = admin(ADMIN, {"allowAll": "off", "sites": {base: "session"}})
-    assert st["allowAllUntil"] is None and st["sessionSites"] == {base: True}, st
-    admin(ADMIN, {"sites": {base: "off"}})
+    # Mixed change: the tightening part applies at once, the loosening part only after "yes"
+    st = await admin_answered({"allowAll": "off", "sites": {base: "session"}}, "declined")
+    assert st["allowAllUntil"] is None and st["sessionSites"] == {} and st["loosening"] == [f"sites:{base}:session"], st
+    st = await admin_answered({"sites": {base: "session"}})
+    assert st["sessionSites"] == {base: True}, st
+    assert admin(ADMIN, {"sites": {base: "off"}})["confirmation"] == "not_needed"
     # Blocked sites: nothing works, not even reading or opening; master switch off: everything refused
     assert admin(ADMIN, {"blockedSites": ["http://127.0.0.1/x"]})["blockedSites"] == ["127.0.0.1"]
     for r in (await t.raw("read_page", tabId=tid), await t.raw("tabs_create", url=f"{base}/two.html")):
         assert r.is_error and "Blocked sites" in r.content[0].text, r.content[0].text
-    admin(ADMIN, {"blockedSites": [], "enabled": False})
+    st = await asyncio.to_thread(admin, ADMIN, {"blockedSites": [], "enabled": False})  # unblocking waits, switching off not
+    assert st["confirmation"] == "expired" and st["blockedSites"] == ["127.0.0.1"] and st["enabled"] is False, st
     r = await t.raw("tabs_context")
     assert r.is_error and "turned off" in r.content[0].text, r.content[0].text
-    assert admin(ADMIN, {"enabled": True})["enabled"] is True
+    st = await admin_answered({"blockedSites": [], "enabled": True})
+    assert st["enabled"] is True and st["blockedSites"] == [] and st["loosening"] == ["enabled", "blockedSites:-127.0.0.1"], st
     assert "two" in await t("get_page_text", tabId=tid)
     await t("tabs_close", tabId=tid)
+
+    # A tab the user shared is approved for the website it showed then (other pages of it too), not for others
+    utid = await sw_eval(f"chrome.tabs.create({{url: '{base}/two.html?h1', active: false}})"
+                         ".then(async (t) => {{ await setShared(t.id, 'user'); return t.id; }})")
+    await asyncio.sleep(1)
+    await t("computer", tabId=utid, action="left_click", coordinate=[5, 5])  # a prompt would go unanswered -> error
+    await t("navigate", tabId=utid, url=f"{base}/two.html?h1b")
+    await t("computer", tabId=utid, action="left_click", coordinate=[5, 5])
+    await t("navigate", tabId=utid, url=f"{base.replace('127.0.0.1', 'localhost')}/two.html?h1c")
+    r = await t.raw("computer", tabId=utid, action="left_click", coordinate=[5, 5])
+    assert r.is_error and "did not respond" in r.content[0].text, r.content[0].text
+    assert "two" in await t("get_page_text", tabId=utid)  # still shared: reading works
+    await sw_eval(f"setShared({utid}, null).then(() => chrome.tabs.remove({utid})).then(() => 1)")
     await sw_eval("chrome.tabs.query({}).then(async (ts) => { for (const x of ts) if (x.url.includes('options.html')) await chrome.tabs.remove(x.id); "
                   "await chrome.storage.local.set({siteMode: 'all'}); return 1; })")
+
+
+async def safety(t: T, base: str, relay_log: Path):
+    """Safety tiers: tightening applies at once, loosening only after confirmation; read refuses acting;
+    passwords=true lets typing into password fields through without the value reaching the relay log or the answer."""
+    await sw_eval("chrome.storage.local.set({confirmTimeoutMs: 2000}).then(() => 1)")
+    tid = json.loads(await t("tabs_create", url=f"{base}/two.html?s1"))["tabId"]
+    js = lambda code: t("javascript", tabId=tid, text=code)
+    await js("document.body.insertAdjacentHTML('beforeend', '<input type=password id=pw><input id=tx aria-label=Plain>'); 1")
+    page = await t("read_page", tabId=tid)
+    pw, tx = ref(page, r"type=password"), ref(page, r'textbox "Plain')
+    off = "safety settings"
+    # Nothing stored (installations before 0.9) = standard = the behaviour so far
+    assert admin(ADMIN)["safety"] == {"tier": "standard", "act": True, "js": True, "navigate": True, "upload": True,
+                                      "download": True, "devtools": True, "scriptWrites": False, "frameTyping": False,
+                                      "passwords": False, "closeShared": False}
+    # Tightening through the relay applies at once: read refuses acting, scripts and opening pages; reading works
+    st = admin(ADMIN, {"safety": {"tier": "read"}})
+    assert st["confirmation"] == "not_needed" and st["safety"]["tier"] == "read" and not st["safety"]["act"], st
+    for name, args in (("computer", {"tabId": tid, "action": "left_click", "coordinate": [5, 5]}),
+                       ("computer", {"tabId": tid, "action": "type", "text": "x"}),
+                       ("form_input", {"tabId": tid, "ref": tx, "value": "x"}), ("javascript", {"tabId": tid, "text": "1"}),
+                       ("navigate", {"tabId": tid, "url": f"{base}/two.html"}), ("tabs_create", {"url": f"{base}/two.html"})):
+        r = await t.raw(name, **args)
+        assert r.is_error and off in r.content[0].text, (name, r.content[0].text)
+    assert "two" in await t("read_page", tabId=tid) and "two" in await t("get_page_text", tabId=tid)
+    await t("computer", tabId=tid, action="scroll", scroll_direction="down")
+    await t("computer", tabId=tid, action="hover", coordinate=[5, 5])
+    await t("computer", tabId=tid, action="screenshot", scale=0.3)
+    # Loosening without an answer does nothing
+    st = await asyncio.to_thread(admin, ADMIN, {"safety": {"tier": "standard"}})
+    assert st["confirmation"] == "expired" and st["safety"]["tier"] == "read" and "safety.act" in st["loosening"], st
+    # Confirmed on the options page (for systems without notification buttons): custom = standard + passwords
+    await sw_eval("chrome.storage.local.set({confirmTimeoutMs: 30000}).then(() => chrome.tabs.create({url: chrome.runtime.getURL('options.html')})).then(() => 1)")
+    await asyncio.sleep(1)
+    task = asyncio.ensure_future(asyncio.to_thread(admin, ADMIN, {"safety": {"tier": "standard", "passwords": True}}))
+    for _ in range(100):
+        if await page_eval("options.html", "!document.getElementById('pending').hidden"):
+            break
+        await asyncio.sleep(0.1)
+    assert await page_eval("options.html", "document.getElementById('pendingText').textContent")
+    await page_eval("options.html", "document.getElementById('pendingYes').click()")
+    st = await task
+    assert st["confirmation"] == "confirmed" and st["safety"]["tier"] == "custom" and st["safety"]["passwords"], st
+    assert await page_eval("options.html", "document.getElementById('pending').hidden") is True
+    # Passwords allowed: typing, keys and form_input reach the field, the value appears neither in the answer nor in the log
+    await t("computer", tabId=tid, action="left_click", ref=pw)
+    out = await t("computer", tabId=tid, action="type", text="hunter2-type")
+    assert "hunter2" not in out and await js("pw.value") == "hunter2-type", out
+    assert await t("computer", tabId=tid, action="key", text="ctrl+a h u n t e r 2") == "keys: ••••"
+    out = await t("form_input", tabId=tid, ref=pw, value="hunter2-form")
+    assert "hunter2" not in out and await js("pw.value") == "hunter2-form", out
+    await t("computer", tabId=tid, action="left_click", ref=tx)
+    await t("computer", tabId=tid, action="type", text="plain-visible")  # ordinary fields stay in the audit log
+    log = relay_log.read_text()
+    assert "hunter2" not in log and "plain-visible" in log and "[hidden: password field]" in log, log[-2000:]
+    # Tightening applies at once
+    st = admin(ADMIN, {"safety": {"passwords": False}})
+    assert st["confirmation"] == "not_needed" and st["safety"]["tier"] == "standard", st
+    r = await t.raw("form_input", tabId=tid, ref=pw, value="x")
+    assert r.is_error and "password field" in r.content[0].text, r.content[0].text
+    # Clicking off but scripts on: scripts stay read-only even on approved websites
+    admin(ADMIN, {"safety": {"act": False}})
+    out = await js("await fetch('/two.html', {method: 'POST'}).then(r => 'passed ' + r.status, () => 'blocked')")
+    assert out.startswith("blocked") and "may only read" in out, out
+    # In a tab the user shared the guard ends shortly after the script, so the user's own requests go through again
+    utid = await sw_eval(f"chrome.tabs.create({{url: '{base}/two.html?m5', active: false}})"
+                         ".then(async (t) => {{ await setShared(t.id, 'user'); return t.id; }})")
+    await asyncio.sleep(1)
+    out = await t("javascript", tabId=utid, text="await fetch('/two.html', {method: 'POST'}).then(r => 'passed', () => 'blocked')")
+    assert out.startswith("blocked"), out
+    await t("javascript", tabId=utid, text="setTimeout(() => fetch('/two.html', {method: 'PUT'}).then(() => window.late = 'passed', "
+                                           "() => window.late = 'blocked'), 300); 1")
+    await asyncio.sleep(3.5)
+    own = "fetch('/two.html', {method: 'POST'}).then(() => window.own = 'passed', () => window.own = 'blocked'); 1"
+    await page_eval("two.html?m5", own)
+    await page_eval("two.html?s1", own)
+    await asyncio.sleep(0.5)
+    assert await page_eval("two.html?m5", "window.late + ' ' + window.own") == "blocked passed"
+    assert await page_eval("two.html?s1", "window.own") == "blocked"  # Hermes' own tab: until the next page load
+    await sw_eval(f"setShared({utid}, null).then(() => chrome.tabs.remove({utid})).then(() => 1)")
+    # Extended (fresh tab, website not approved): scripts may write, typing into foreign frames, closing shared tabs
+    await sw_eval("chrome.storage.local.set({siteMode: 'ask'}).then(() => 1)")
+    await admin_answered({"safety": {"tier": "extended"}})
+    await t("tabs_close", tabId=tid)
+    tid = json.loads(await t("tabs_create", url=f"{base}/two.html?s2"))["tabId"]
+    out = await js("await fetch('/two.html', {method: 'POST'}).then(r => 'passed ' + r.status, () => 'blocked')")
+    assert out.startswith("passed"), out
+    await sw_eval("chrome.storage.local.set({siteMode: 'all'}).then(() => 1)")
+    await js("document.body.insertAdjacentHTML('beforeend', '<iframe id=fx style=\"width:200px;height:40px;border:0\" "
+             "src=\"data:text/html,<body style=margin:0><input style=width:100%;height:40px></body>\"></iframe>'); 1")
+    await asyncio.sleep(0.5)
+    await t("computer", tabId=tid, action="left_click", coordinate=json.loads(await js(center_js("#fx"))))
+    await t("computer", tabId=tid, action="type", text="framed-hunter2")  # field type unknown: hidden in the log too
+    assert "framed-hunter2" not in relay_log.read_text()
+    utid = await sw_eval(f"chrome.tabs.create({{url: '{base}/two.html', active: false}})"
+                         ".then(async (t) => {{ await setShared(t.id, 'user'); return t.id; }})")
+    await asyncio.sleep(1)
+    # ... but not over a beforeunload dialog: that may be the user's unsaved work
+    await t("javascript", tabId=utid, text="onbeforeunload = (e) => { e.preventDefault(); return ''; }; 1")
+    await t("computer", tabId=utid, action="left_click", coordinate=[5, 5])  # user activation, else no dialog
+    r = await t.raw("tabs_close", tabId=utid)
+    assert r.is_error and "unsaved changes" in r.content[0].text, r.content[0].text
+    assert utid in {x["tabId"] for x in json.loads(await t("tabs_context"))}
+    await t("javascript", tabId=utid, text="onbeforeunload = null; 1")
+    await t("tabs_close", tabId=utid)
+    # Full via the options page: asks first (no = unchanged), and also allows all websites; standard again without asking
+    await sw_eval("chrome.storage.local.set({siteMode: 'ask'}).then(() => 1)")
+    await page_eval("options.html", "confirm = () => false; document.querySelector('input[name=tier][value=full]').click(); 1")
+    await asyncio.sleep(0.5)
+    assert (await admin_safety())["tier"] == "extended"
+    await page_eval("options.html", "confirm = () => true; document.querySelector('input[name=tier][value=full]').click(); 1")
+    await asyncio.sleep(0.5)
+    st = admin(ADMIN)
+    assert st["safety"]["tier"] == "full" and st["siteMode"] == "all", st
+    assert await sw_eval("getSafety().then(rightsNote)")  # the stop bar names the wide rights
+    await page_eval("options.html", "confirm = () => { throw new Error('asked'); }; document.querySelector('input[name=tier][value=standard]').click(); 1")
+    await asyncio.sleep(0.5)
+    assert (await admin_safety())["tier"] == "standard"
+    await t("tabs_close", tabId=tid)
+    await sw_eval("chrome.tabs.query({}).then(async (ts) => { for (const x of ts) if (x.url.includes('options.html')) await chrome.tabs.remove(x.id); "
+                  "await chrome.storage.local.remove('safety'); return 1; })")
+
+
+async def admin_safety():
+    return (await asyncio.to_thread(admin, ADMIN))["safety"]
 
 
 def check_locales():
@@ -539,6 +715,24 @@ async def scenario(t: T, tmp: Path):
     assert "Output" in await t("get_page_text", tabId=tid)
     await t("computer", tabId=tid, action="wait", duration=0.2)
 
+    # A page that keeps removing the overlay: put back, then reported to the agent (no endless fight)
+    await js("window.rm = setInterval(() => document.querySelector('hermes-tabs-overlay')?.remove(), 5); 1")
+    await asyncio.sleep(1.5)
+    out = await t("find", tabId=tid, query="Greet")
+    assert "removing or hiding the Hermes overlay" in out, out
+    await js("clearInterval(rm); 1")
+
+    # data: and about:blank are no website: reading yes, acting no (even with all sites allowed), scripts read-only
+    dtid = json.loads(await t("tabs_create", url="data:text/html,<p>datapage</p>"))["tabId"]
+    assert "datapage" in await t("get_page_text", tabId=dtid)
+    r = await t.raw("computer", tabId=dtid, action="left_click", coordinate=[5, 5])
+    assert r.is_error and "data: or about:blank" in r.content[0].text, r.content[0].text
+    out = await t("javascript", tabId=dtid, text=f"await fetch('{base}/two.html', {{method: 'POST'}}).then(r => 'passed', () => 'blocked')")
+    assert out.startswith("blocked") and await sw_eval(f"tabState.get({dtid}).jsGuard") is True, out
+    await t("navigate", tabId=dtid, url=f"{base}/two.html")
+    await t("computer", tabId=dtid, action="left_click", coordinate=[5, 5])  # a website again: acting works
+    await t("tabs_close", tabId=dtid)
+
     # Subtree, navigation, window, batch, GIF
     sub = await t("read_page", tabId=tid, ref_id=ref(page, r"^\s*form"))
     assert "Greet" in sub and "Sorting" not in sub, sub
@@ -714,6 +908,7 @@ async def scenario(t: T, tmp: Path):
     await t("tabs_close", tabId=ptid)
 
     await permissions(t, base)
+    await safety(t, base, tmp / "relay.log")
 
     # Limits and cleanup
     denied = await t.raw("read_page", tabId=tid + 1000)
@@ -732,7 +927,7 @@ async def run(scale: int):
     PILImage.new("RGB", (60, 40), "white").save(tmp / "doc.pdf")
     env = {**os.environ, "HERMES_TABS_TOKEN": TOKEN, "HERMES_TABS_ADMIN_TOKEN": ADMIN, "HERMES_TABS_PORT": str(RELAY_PORT), "HERMES_TABS_GIF_DIR": str(tmp)}
     procs = [
-        subprocess.Popen([sys.executable, HERE / "relay.py"], env=env),
+        subprocess.Popen([sys.executable, HERE / "relay.py"], env=env, stdout=(tmp / "relay.log").open("w")),  # audit log
         subprocess.Popen([sys.executable, "-m", "http.server", str(PAGE_PORT), "-b", "127.0.0.1", "-d", tmp],
                          stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL),
         subprocess.Popen([
@@ -771,6 +966,18 @@ async def run(scale: int):
             raise AssertionError("relay accepts browser requests")
         except urllib.error.HTTPError as e:
             assert e.code == 403
+        try:  # the agent's token may read /admin/status but not reload the extension
+            urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/reload", method="POST",
+                                                          headers={"Authorization": f"Bearer {TOKEN}"}))
+            raise AssertionError("/admin/reload works with the agent's token")
+        except urllib.error.HTTPError as e:
+            assert e.code == 401, e.code
+        try:  # invalid JSON is the caller's mistake
+            urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/settings", method="POST", data=b"{nope",
+                                                          headers={"Authorization": f"Bearer {ADMIN}"}))
+            raise AssertionError("/admin/settings accepts invalid JSON")
+        except urllib.error.HTTPError as e:
+            assert e.code == 400, e.code
         for method in ("GET", "DELETE"):  # all HTTP methods require the token
             try:
                 urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/mcp", method=method))

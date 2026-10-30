@@ -41,6 +41,15 @@
       }
     }
   },
+  "askSays": {
+    "message": "Hermes 说：$TEXT$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Click Search"
+      }
+    }
+  },
   "notifTitle": {
     "message": "Hermes 请求授权"
   },
@@ -214,5 +223,161 @@
   },
   "optTokenHelp": {
     "message": "中继的访问令牌（HERMES_TABS_TOKEN）。"
+  },
+  "overlayFull": {
+    "message": "完全权限"
+  },
+  "overlayPasswords": {
+    "message": "可以输入密码"
+  },
+  "looseTitle": {
+    "message": "允许 Hermes 做更多？"
+  },
+  "looseText": {
+    "message": "一项设置更改想要允许：$LIST$。仅当这是你自己做的更改（例如在 Hermes 设置中）时才确认。",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Click and type; Enter passwords"
+      }
+    }
+  },
+  "looseConfirm": {
+    "message": "允许"
+  },
+  "looseDecline": {
+    "message": "拒绝"
+  },
+  "looseEnabled": {
+    "message": "在浏览器中启用 Hermes"
+  },
+  "looseUnblock": {
+    "message": "取消屏蔽 $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "optSafetyHeading": {
+    "message": "安全"
+  },
+  "optSafetyHelp": {
+    "message": "Hermes 在其标签页中可以做什么。单独更改某个开关即为自定义设置。"
+  },
+  "tier_read": {
+    "message": "只读"
+  },
+  "tier_read_desc": {
+    "message": "在自己的和共享的标签页中读取、查找、截图和滚动。不能点击、输入、运行脚本或打开页面。"
+  },
+  "tier_standard": {
+    "message": "标准"
+  },
+  "tier_standard_desc": {
+    "message": "点击、输入、打开页面、运行脚本、上传。不能输入密码；在未授权的网站上脚本只能读取。"
+  },
+  "tier_extended": {
+    "message": "扩展"
+  },
+  "tier_extended_desc": {
+    "message": "与标准相同，另外：脚本可在任何地方更改内容、可在其他网站的嵌入框架中输入、可关闭共享的标签页。"
+  },
+  "tier_full": {
+    "message": "完全权限"
+  },
+  "tier_full_desc": {
+    "message": "所有操作，包括输入密码，且不再按网站询问。"
+  },
+  "tier_custom": {
+    "message": "自定义"
+  },
+  "tier_custom_desc": {
+    "message": "你自己组合的下列开关。"
+  },
+  "safety_act": {
+    "message": "点击和输入"
+  },
+  "safety_act_desc": {
+    "message": "点击、输入、按键、表单字段、确认对话框。"
+  },
+  "safety_js": {
+    "message": "运行脚本"
+  },
+  "safety_js_desc": {
+    "message": "javascript 工具。"
+  },
+  "safety_navigate": {
+    "message": "打开页面"
+  },
+  "safety_navigate_desc": {
+    "message": "打开新标签页并加载地址。"
+  },
+  "safety_upload": {
+    "message": "上传文件"
+  },
+  "safety_upload_desc": {
+    "message": "将文件和截图放入文件字段。"
+  },
+  "safety_download": {
+    "message": "下载"
+  },
+  "safety_download_desc": {
+    "message": "将录制内容（GIF）保存到下载文件夹。"
+  },
+  "safety_devtools": {
+    "message": "控制台和网络"
+  },
+  "safety_devtools_desc": {
+    "message": "读取控制台消息和网络请求。"
+  },
+  "safety_scriptWrites": {
+    "message": "脚本可在任何地方更改内容"
+  },
+  "safety_scriptWrites_desc": {
+    "message": "关闭时：在未授权的网站上，脚本只能读取（不能发送，不能弹出窗口）。"
+  },
+  "safety_frameTyping": {
+    "message": "在嵌入框架中输入"
+  },
+  "safety_frameTyping_desc": {
+    "message": "在其他网站的框架中输入，通常是登录和支付组件。"
+  },
+  "safety_passwords": {
+    "message": "输入密码"
+  },
+  "safety_passwords_desc": {
+    "message": "在密码字段中输入。Hermes 将能够输入聊天或其上下文中的登录凭据。"
+  },
+  "safety_closeShared": {
+    "message": "关闭共享的标签页"
+  },
+  "safety_closeShared_desc": {
+    "message": "也关闭你共享的标签页，而不仅是它自己的。"
+  },
+  "warnLoosen": {
+    "message": "Hermes 将获得更多权限：$LIST$。是否继续？",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Enter passwords"
+      }
+    }
+  },
+  "warnPasswords": {
+    "message": "注意：Hermes 将能够输入聊天或其上下文中的登录凭据，例如你告诉它的密码或它在某处读到的密码。仅当你希望 Hermes 替你登录时才启用此项。"
+  },
+  "tamperTitle": {
+    "message": "页面正在隐藏 Hermes 的提示层"
+  },
+  "tamperText": {
+    "message": "$HOST$ 不断移除 Hermes 的提示层，你可能看不到 Hermes 在标签页中的操作。如有疑虑，请通过工具栏图标停止。",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
   }
 }

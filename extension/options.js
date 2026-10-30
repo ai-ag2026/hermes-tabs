@@ -78,3 +78,52 @@ $("blockAdd").onclick = async () => {
   await chrome.storage.local.set({ blockedSites: [...new Set([...blockedSites, d])].sort() });
   $("blockNew").value = "";
 };
+
+// Safety: tier and single switches (safety.js). Loosening asks first; "full" also allows all websites without asking.
+const WARN_FLAGS = ["passwords", "scriptWrites", "frameTyping"];
+function optionRow(key, input, warn) {
+  const row = document.createElement("label");
+  row.className = warn ? "row warn" : "row";
+  row.innerHTML = '<div><div class="title"></div><div class="desc"></div></div>';
+  row.querySelector(".title").textContent = msg(key);
+  row.querySelector(".desc").textContent = msg(key + "_desc");
+  row.append(input);
+  return row;
+}
+for (const t of [...Object.keys(SAFETY_TIERS), "custom"]) {
+  const r = Object.assign(document.createElement("input"), { type: "radio", name: "tier", value: t, disabled: t === "custom" });
+  r.onchange = () => changeSafety(SAFETY_TIERS[t], true);
+  $("tiers").append(Object.assign(optionRow(`tier_${t}`, r), { id: `tier-${t}` }));
+}
+for (const k of SAFETY_KEYS) {
+  const c = Object.assign(document.createElement("input"), { type: "checkbox", className: "switch", id: `safety-${k}` });
+  c.onchange = async () => changeSafety({ ...(await getSafety()), [k]: c.checked }, false);
+  $("switches").append(optionRow(`safety_${k}`, c, k === "passwords"));
+}
+
+async function changeSafety(want, isTier) {
+  const cur = await getSafety(), next = resolveSafety(want);
+  const up = loosenedKeys(cur, next), allSites = next.tier === "full" && cur.tier !== "full";
+  const list = up.map((k) => msg(`safety_${k}`)).concat(allSites ? [msg("optModeAll")] : []);
+  if (list.length && (isTier || allSites || up.some((k) => WARN_FLAGS.includes(k)))) {
+    const text = msg("warnLoosen", list.join(", ")) + (up.includes("passwords") ? "\n\n" + msg("warnPasswords") : "");
+    if (!confirm(text)) return showSafety();
+  }
+  await chrome.storage.local.set({ safety: next, ...(allSites && { siteMode: "all" }) });
+}
+
+async function showSafety() {
+  const s = await getSafety();
+  for (const r of document.getElementsByName("tier")) r.checked = r.value === s.tier;
+  $("tier-custom").hidden = s.tier !== "custom";
+  for (const k of SAFETY_KEYS) $(`safety-${k}`).checked = s[k];
+  const { pendingLoosening: p } = await chrome.storage.session.get("pendingLoosening");
+  $("pending").hidden = !p;
+  if (p) {
+    $("pendingText").textContent = msg("looseText", p.summary);
+    $("pendingYes").onclick = () => chrome.runtime.sendMessage({ type: "loosening", id: p.id, ok: true }).catch(() => {});
+    $("pendingNo").onclick = () => chrome.runtime.sendMessage({ type: "loosening", id: p.id, ok: false }).catch(() => {});
+  }
+}
+chrome.storage.onChanged.addListener(showSafety);
+showSafety();
