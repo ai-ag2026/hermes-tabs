@@ -9,6 +9,7 @@ const DEFAULTS = { relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" 
 const GROUP_TITLE = "Hermes";
 const VERSION = chrome.runtime.getManifest().version;
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs); // texts the user sees (_locales)
+const ACCENT = "#0053fd", DANGER = "#cf2d56"; // Hermes desktop accent and destructive colour
 
 let ws = null;
 const attached = new Set();
@@ -55,6 +56,8 @@ async function setShared(tabId, owner) {
   else delete shared[tabId];
   await chrome.storage.local.set({ shared: { ...shared } });
   await chrome.action.setBadgeText({ tabId, text: owner ? "✓" : "" }).catch(() => {});
+  // per tab: blue check mark while shared; afterwards back to the colour of the global "off" badge
+  await chrome.action.setBadgeBackgroundColor({ tabId, color: owner ? ACCENT : DANGER }).catch(() => {});
 }
 
 // Normal web pages only. On file:, chrome-extension:, chrome: etc. Hermes would get access to local
@@ -624,9 +627,14 @@ async function computer(p) {
 // ---------- Visibility, stop and site permissions ----------
 
 // Overlay in the page (frame, pointer, label, stop, permission prompt). Must never make a command fail.
-// The isolated world has no chrome.i18n, so the localized overlay texts travel along.
-const OVERLAY_TEXT = Object.fromEntries(["overlayBar", "overlayStop", "askDeny", "askOnce", "askSession", "askAlways", "askAll1h"].map((k) => [k, msg(k)]));
-const show = (tabId, o) => page(tabId, "overlay", { ...o, t: OVERLAY_TEXT }).catch(() => {});
+// The isolated world has no chrome.i18n, so the localized overlay texts (and the text direction) travel along.
+const OVERLAY_TEXT = Object.fromEntries(["overlayBar", "overlayStop", "askDeny", "askOnce", "askSession", "askAlways", "askAll1h", "@@bidi_dir"]
+  .map((k) => [k, msg(k)]));
+// The logo travels as data: URLs: no web_accessible_resources, so websites cannot probe for the extension.
+const dataUrl = (file) => fetch(file).then((r) => r.arrayBuffer())
+  .then((b) => "data:image/png;base64," + btoa(String.fromCharCode(...new Uint8Array(b))));
+const LOGO = Promise.all([dataUrl("icon48.png"), dataUrl("icon48-dark.png")]).catch(() => []);
+const show = async (tabId, o) => page(tabId, "overlay", { ...o, t: OVERLAY_TEXT, logo: await LOGO }).catch(() => {});
 
 const labels = (prefix, keys) => Object.fromEntries(keys.map((k) => [k, msg(prefix + k)]));
 const LABELS = labels("label_", ["read_page", "get_page_text", "find", "javascript", "form_input", "file_upload", "navigate",
@@ -1027,28 +1035,47 @@ const handlers = {
 // ---------- Connection to the relay ----------
 
 let connecting = false;
+let again = false; // settings changed while connect() was reading them: read again
+
+// Default name of this browser: a star and a number, pronounceable in any language ("Vega 42").
+const STARS = ["Vega", "Altair", "Deneb", "Rigel", "Sirius", "Spica", "Capella", "Antares", "Arcturus", "Procyon",
+  "Pollux", "Castor", "Regulus", "Mira", "Alcor", "Mizar", "Algol", "Electra", "Maia", "Merope", "Atlas", "Bellatrix",
+  "Hadar", "Mimosa", "Acrux", "Canopus", "Markab", "Alnair", "Hamal", "Naos", "Sabik", "Shaula", "Nunki", "Izar",
+  "Zosma", "Thuban", "Kochab", "Ankaa", "Elnath", "Alcyone"];
+const randomName = () => {
+  const [a, b] = crypto.getRandomValues(new Uint32Array(2));
+  return `${STARS[a % STARS.length]} ${10 + (b % 90)}`;
+};
 
 async function connect() {
-  if (ws || connecting) return;
+  if (connecting) return void (again = true);
+  if (ws) return;
   connecting = true;
+  again = false;
   let cfg;
   try {
     cfg = await chrome.storage.local.get({ ...DEFAULTS, deviceId: "" });
-    // identifies this browser at the relay; created while still "connecting" so a parallel connect() cannot make a second one
-    if (cfg.token && !cfg.deviceId) await chrome.storage.local.set({ deviceId: (cfg.deviceId = crypto.randomUUID()) });
+    // deviceId identifies this browser at the relay, browserName names it (stays editable in the options). Both are
+    // created while still "connecting" so a parallel connect() cannot make a second one.
+    const add = {};
+    if (cfg.token && !cfg.deviceId) add.deviceId = cfg.deviceId = crypto.randomUUID();
+    if (!cfg.browserName) add.browserName = cfg.browserName = randomName();
+    if (Object.keys(add).length) await chrome.storage.local.set(add);
   } finally {
     connecting = false;
   }
+  if (again) return connect();
   const { relay, token, browserName, deviceId } = cfg;
   if (!token) return setState(false);
   const platform = navigator.userAgentData?.platform ?? "";
-  const q = new URLSearchParams({ token, device: deviceId, name: browserName || `${platform || "Browser"} ${deviceId.slice(0, 4)}`, platform });
+  const q = new URLSearchParams({ token, device: deviceId, name: browserName, platform });
   const sock = new WebSocket(`${relay}?${q}`);
   ws = sock;
   sock.onopen = () => setState(true);
   sock.onclose = () => {
     pairAsk?.resolve(false); // its answer could no longer reach the relay
-    if (ws === sock) ws = null;
+    if (ws !== sock) return; // replaced by a newer connection, which reconnects on its own
+    ws = null;
     setState(false);
     setTimeout(connect, 3000);
   };
@@ -1078,7 +1105,8 @@ async function connect() {
 
 function setState(online) {
   chrome.action.setBadgeText({ text: online ? "" : msg("badgeOff") });
-  chrome.action.setBadgeBackgroundColor({ color: "#b00020" });
+  chrome.action.setBadgeBackgroundColor({ color: DANGER });
+  chrome.action.setBadgeTextColor?.({ color: "#ffffff" });
 }
 
 // The ping keeps the service worker alive (Chrome 116+); the alarm wakes it if it fell asleep anyway.
@@ -1086,7 +1114,8 @@ setInterval(() => ws?.readyState === WebSocket.OPEN && ws.send('{"ping":1}'), 20
 chrome.alarms.create("keepalive", { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(connect);
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && (changes.relay || changes.token || changes.browserName)) {
+  // A browserName without oldValue is the default connect() just created: that connection already carries it.
+  if (area === "local" && (changes.relay || changes.token || changes.browserName?.oldValue)) {
     const old = ws;
     ws = null;
     old?.close();

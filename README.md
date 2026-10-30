@@ -12,6 +12,18 @@ It is for people who want an agent to use sites that have no API or sit behind a
 
 Status: early. Tested interactively on ~36 popular websites and by an automated end-to-end test (see [Tests](#tests)).
 
+![Hermes asks before its first click on a site; frame, pointer and stop bar show that it controls the tab](docs/consent-en.png)
+
+<details><summary>Options page of the extension and settings page in Hermes</summary>
+
+![Options page of the extension](docs/options-en.png)
+
+![Settings page of the Hermes plugin](docs/plugin-en.png)
+
+</details>
+
+<sub>The screenshots show the Wikipedia article [“Hermes”](https://en.wikipedia.org/wiki/Hermes) ([de](https://de.wikipedia.org/wiki/Hermes)) by Wikipedia contributors, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), with the hermes-tabs overlay added (image in the article: public domain). These screenshots are therefore licensed CC BY-SA 4.0, not MIT. The consent prompt is staged with `docs/screenshots.py`.</sub>
+
 ## Architecture
 
 ```
@@ -100,7 +112,7 @@ For the optional Hermes plugin (settings page, extra guard rails) see [Hermes pl
 | `HERMES_TABS_GIF_DIR` | Directory for exported GIFs, default `~/.cache/hermes-tabs`. The relay user must own it and others must not be able to write to it. |
 | `HERMES_TABS_UPLOAD_ROOTS` | Colon-separated directories that `file_upload(paths=...)` may read from, default: only `HERMES_TABS_GIF_DIR`. |
 
-**Extension** (options page): relay address (default `ws://127.0.0.1:8766/ext`) and token. The interface is English with a German translation.
+**Extension** (options page): relay address (default `ws://127.0.0.1:8766/ext`), token and the name of this browser (on first start a random star name such as "Vega 42", changeable). The interface follows the browser language: English, German, French, Spanish, Russian, Japanese, Chinese (simplified and traditional) and Arabic.
 
 **Hermes plugin** (environment variables of the Hermes process): `HERMES_TABS_RELAY` (default `http://127.0.0.1:8766`), `HERMES_TABS_ADMIN_TOKEN`, `HERMES_TABS_OWN_HOSTS` (see below).
 
@@ -247,3 +259,5 @@ Ports can be changed with `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` and `SMOKE_CDP_P
 ## License
 
 MIT – see [LICENSE](LICENSE).
+
+The Hermes logo in the extension (icon, options page, overlay) is © Nous Research, MIT License (see [extension/NOTICE](extension/NOTICE)). hermes-tabs is not an official Nous Research project.

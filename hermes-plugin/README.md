@@ -7,6 +7,7 @@ Settings page and guard rails for [hermes-tabs](https://github.com/ai-ag2026/her
 ## What it adds
 
 - **Settings → Plugins → "Hermes in the Browser"** (desktop half, opt-in): which browser Hermes works in (when several are connected to the relay: show each one's settings, pick the one for Hermes), master switch, default for all websites (ask or allow all), temporary "allow all", allowed and blocked sites. The values live in the browser extension and are enforced there.
+- **Language:** the settings page follows the language set in Hermes (and switches live): English, German, French, Spanish, Russian, Japanese, Chinese (simplified and traditional) and Arabic, as in the Hermes desktop app; other languages fall back to English. The German and English texts are maintained by hand, all others are machine translations - corrections are welcome (the texts are the `STR` object in `desktop/plugin.js`).
 - **`pre_tool_call` hook:**
   - master switch off: `mcp__tabs__*` calls are rejected early;
   - blocked sites also apply to Hermes' own browser tools (`browser_exec`, `browser_cdp`) and `web_extract` when the domain appears in the arguments;

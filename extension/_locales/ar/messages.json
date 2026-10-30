@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "يشارك علامات تبويب منفردة مع وكيل Hermes، ويمرّ الاتصال عبر خادم الترحيل الخاص بك."
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: مشاركة علامة التبويب هذه / إلغاء مشاركتها"
+  },
+  "badgeOff": {
+    "message": "متوقف"
+  },
+  "overlayBar": {
+    "message": "يتحكم Hermes في علامة التبويب هذه"
+  },
+  "overlayStop": {
+    "message": "إيقاف"
+  },
+  "askDeny": {
+    "message": "لا"
+  },
+  "askOnce": {
+    "message": "مرة واحدة"
+  },
+  "askSession": {
+    "message": "الموقع: حتى إعادة التشغيل"
+  },
+  "askAlways": {
+    "message": "الموقع: دائمًا"
+  },
+  "askAll1h": {
+    "message": "كل المواقع: ساعة"
+  },
+  "askText": {
+    "message": "يريد Hermes تنفيذ إجراءات على $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "يطلب Hermes الإذن"
+  },
+  "notifSession": {
+    "message": "هذا الموقع حتى إعادة التشغيل"
+  },
+  "notifAll1h": {
+    "message": "كل المواقع لمدة ساعة"
+  },
+  "label_read_page": {
+    "message": "يقرأ الصفحة"
+  },
+  "label_get_page_text": {
+    "message": "يقرأ النص"
+  },
+  "label_find": {
+    "message": "يبحث في الصفحة"
+  },
+  "label_javascript": {
+    "message": "يقرأ عبر سكربت"
+  },
+  "label_form_input": {
+    "message": "يملأ حقلًا"
+  },
+  "label_file_upload": {
+    "message": "يرفع ملفًا"
+  },
+  "label_navigate": {
+    "message": "يفتح صفحة"
+  },
+  "label_read_console_messages": {
+    "message": "يقرأ وحدة التحكم"
+  },
+  "label_read_network_requests": {
+    "message": "يقرأ طلبات الشبكة"
+  },
+  "label_handle_dialog": {
+    "message": "يرد على مربع حوار"
+  },
+  "action_left_click": {
+    "message": "نقرة"
+  },
+  "action_right_click": {
+    "message": "نقرة يمنى"
+  },
+  "action_double_click": {
+    "message": "نقرة مزدوجة"
+  },
+  "action_triple_click": {
+    "message": "نقرة ثلاثية"
+  },
+  "action_hover": {
+    "message": "يشير إلى"
+  },
+  "action_left_click_drag": {
+    "message": "يسحب"
+  },
+  "action_type": {
+    "message": "يكتب"
+  },
+  "action_key": {
+    "message": "يضغط مفاتيح"
+  },
+  "action_scroll": {
+    "message": "يمرّر"
+  },
+  "action_scroll_to": {
+    "message": "يمرّر إلى"
+  },
+  "optSave": {
+    "message": "حفظ واتصال"
+  },
+  "optSaved": {
+    "message": "تم الحفظ. إذا كانت شارة الأيقونة فارغة، فالاتصال قائم."
+  },
+  "optBrowserHeading": {
+    "message": "Hermes في المتصفح"
+  },
+  "optEnabled": {
+    "message": "مفعّل (عند الإيقاف لا يستطيع Hermes فعل أي شيء في المتصفح)"
+  },
+  "optActionsHeading": {
+    "message": "الإجراءات على المواقع"
+  },
+  "optActionsHelp": {
+    "message": "يمكن لـ Hermes القراءة في أي مكان داخل علامات تبويبه. أما النقر والكتابة والنماذج فبإذن فقط."
+  },
+  "optModeAsk": {
+    "message": "اسأل، إلا في المواقع المسموح بها"
+  },
+  "optModeAll": {
+    "message": "اسمح دائمًا بكل المواقع"
+  },
+  "optTempHeading": {
+    "message": "السماح مؤقتًا بكل المواقع"
+  },
+  "opt1h": {
+    "message": "ساعة واحدة"
+  },
+  "opt8h": {
+    "message": "8 ساعات"
+  },
+  "optUntilRestart": {
+    "message": "حتى إعادة تشغيل المتصفح"
+  },
+  "optEnd": {
+    "message": "إنهاء"
+  },
+  "optAlwaysHeading": {
+    "message": "مسموح بها دائمًا"
+  },
+  "optSessionHeading": {
+    "message": "مسموح بها حتى إعادة تشغيل المتصفح"
+  },
+  "optBlockedHeading": {
+    "message": "المواقع المحظورة"
+  },
+  "optBlockedHelp": {
+    "message": "لا يمكن لـ Hermes فعل أي شيء هنا، ولا حتى القراءة (بما في ذلك النطاقات الفرعية)."
+  },
+  "optAdd": {
+    "message": "إضافة"
+  },
+  "optRevoke": {
+    "message": "إلغاء الإذن"
+  },
+  "optRemove": {
+    "message": "إزالة"
+  },
+  "optNone": {
+    "message": "لا شيء"
+  },
+  "optActiveSession": {
+    "message": "مفعّل حتى إعادة تشغيل المتصفح."
+  },
+  "optActiveUntil": {
+    "message": "مفعّل حتى $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "متوقف."
+  },
+  "optBadDomain": {
+    "message": "يرجى إدخال نطاق مثل example.com"
+  },
+  "pairTitle": {
+    "message": "يريد Hermes استخدام متصفح"
+  },
+  "pairText": {
+    "message": "هل تريد استخدام هذا المتصفح مع Hermes؟ انقر على «اتصال» في المتصفح الذي يجب أن يعمل فيه Hermes."
+  },
+  "pairConnect": {
+    "message": "اتصال"
+  },
+  "optBrowserName": {
+    "message": "اسم هذا المتصفح"
+  },
+  "optBrowserNameHelp": {
+    "message": "يظهر لـ Hermes عندما تكون عدة متصفحات متصلة بخادم الترحيل (مثل: مكتبي، محمول)."
+  },
+  "optConnectionHeading": {
+    "message": "الاتصال"
+  },
+  "optRelayHelp": {
+    "message": "عنوان WebSocket لخادم الترحيل الخاص بك."
+  },
+  "optTokenHelp": {
+    "message": "رمز الوصول إلى خادم الترحيل (HERMES_TABS_TOKEN)."
+  }
+}

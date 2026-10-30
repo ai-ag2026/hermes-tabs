@@ -205,5 +205,14 @@
   },
   "optBrowserNameHelp": {
     "message": "Sieht Hermes, wenn mehrere Browser am Relay hängen (z. B. Desktop, Laptop)."
+  },
+  "optConnectionHeading": {
+    "message": "Verbindung"
+  },
+  "optRelayHelp": {
+    "message": "WebSocket-Adresse deines Relays."
+  },
+  "optTokenHelp": {
+    "message": "Zugangs-Token des Relays (HERMES_TABS_TOKEN)."
   }
 }

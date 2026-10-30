@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "将单个标签页共享给 Hermes 智能体；连接通过你自己的中继进行。"
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs：共享 / 取消共享此标签页"
+  },
+  "badgeOff": {
+    "message": "离线"
+  },
+  "overlayBar": {
+    "message": "Hermes 正在控制此标签页"
+  },
+  "overlayStop": {
+    "message": "停止"
+  },
+  "askDeny": {
+    "message": "拒绝"
+  },
+  "askOnce": {
+    "message": "仅此一次"
+  },
+  "askSession": {
+    "message": "此网站：直到重启"
+  },
+  "askAlways": {
+    "message": "此网站：始终"
+  },
+  "askAll1h": {
+    "message": "所有网站：1 小时"
+  },
+  "askText": {
+    "message": "Hermes 想在 $HOST$ 上执行操作",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes 请求授权"
+  },
+  "notifSession": {
+    "message": "此网站，直到重启"
+  },
+  "notifAll1h": {
+    "message": "所有网站，1 小时"
+  },
+  "label_read_page": {
+    "message": "正在读取页面"
+  },
+  "label_get_page_text": {
+    "message": "正在读取文本"
+  },
+  "label_find": {
+    "message": "正在页面中搜索"
+  },
+  "label_javascript": {
+    "message": "正在通过脚本读取"
+  },
+  "label_form_input": {
+    "message": "正在填写字段"
+  },
+  "label_file_upload": {
+    "message": "正在上传文件"
+  },
+  "label_navigate": {
+    "message": "正在打开页面"
+  },
+  "label_read_console_messages": {
+    "message": "正在读取控制台"
+  },
+  "label_read_network_requests": {
+    "message": "正在读取网络请求"
+  },
+  "label_handle_dialog": {
+    "message": "正在响应对话框"
+  },
+  "action_left_click": {
+    "message": "点击"
+  },
+  "action_right_click": {
+    "message": "右键点击"
+  },
+  "action_double_click": {
+    "message": "双击"
+  },
+  "action_triple_click": {
+    "message": "三击"
+  },
+  "action_hover": {
+    "message": "指向"
+  },
+  "action_left_click_drag": {
+    "message": "拖动"
+  },
+  "action_type": {
+    "message": "输入"
+  },
+  "action_key": {
+    "message": "按键"
+  },
+  "action_scroll": {
+    "message": "滚动"
+  },
+  "action_scroll_to": {
+    "message": "滚动到"
+  },
+  "optSave": {
+    "message": "保存并连接"
+  },
+  "optSaved": {
+    "message": "已保存。如果图标上的徽标为空，则表示已连接。"
+  },
+  "optBrowserHeading": {
+    "message": "浏览器中的 Hermes"
+  },
+  "optEnabled": {
+    "message": "启用（关闭后，Hermes 在浏览器中无法执行任何操作）"
+  },
+  "optActionsHeading": {
+    "message": "网站上的操作"
+  },
+  "optActionsHelp": {
+    "message": "Hermes 可以在其标签页中随处读取。点击、输入和填写表单需经授权。"
+  },
+  "optModeAsk": {
+    "message": "询问（已允许的网站除外）"
+  },
+  "optModeAll": {
+    "message": "始终允许所有网站"
+  },
+  "optTempHeading": {
+    "message": "临时允许所有网站"
+  },
+  "opt1h": {
+    "message": "1 小时"
+  },
+  "opt8h": {
+    "message": "8 小时"
+  },
+  "optUntilRestart": {
+    "message": "直到浏览器重启"
+  },
+  "optEnd": {
+    "message": "结束"
+  },
+  "optAlwaysHeading": {
+    "message": "始终允许"
+  },
+  "optSessionHeading": {
+    "message": "允许至浏览器重启"
+  },
+  "optBlockedHeading": {
+    "message": "已屏蔽的网站"
+  },
+  "optBlockedHelp": {
+    "message": "Hermes 在这些网站上不能执行任何操作，包括读取（含子域名）。"
+  },
+  "optAdd": {
+    "message": "添加"
+  },
+  "optRevoke": {
+    "message": "撤销"
+  },
+  "optRemove": {
+    "message": "移除"
+  },
+  "optNone": {
+    "message": "无"
+  },
+  "optActiveSession": {
+    "message": "有效期至浏览器重启。"
+  },
+  "optActiveUntil": {
+    "message": "有效期至 $TIME$。",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "已关闭。"
+  },
+  "optBadDomain": {
+    "message": "请输入域名，例如 example.com"
+  },
+  "pairTitle": {
+    "message": "Hermes 想使用一个浏览器"
+  },
+  "pairText": {
+    "message": "将此浏览器用于 Hermes？请在希望 Hermes 工作的浏览器中点击“连接”。"
+  },
+  "pairConnect": {
+    "message": "连接"
+  },
+  "optBrowserName": {
+    "message": "此浏览器的名称"
+  },
+  "optBrowserNameHelp": {
+    "message": "当多个浏览器连接到中继时，Hermes 会看到此名称（例如：台式机、笔记本）。"
+  },
+  "optConnectionHeading": {
+    "message": "连接"
+  },
+  "optRelayHelp": {
+    "message": "你的中继的 WebSocket 地址。"
+  },
+  "optTokenHelp": {
+    "message": "中继的访问令牌（HERMES_TABS_TOKEN）。"
+  }
+}

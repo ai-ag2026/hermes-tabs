@@ -2,12 +2,16 @@ const $ = (id) => document.getElementById(id);
 const msg = (key, ...subs) => chrome.i18n.getMessage(key, subs);
 for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = msg(el.dataset.i18n);
 document.documentElement.lang = chrome.i18n.getUILanguage();
+document.documentElement.dir = msg("@@bidi_dir");
+$("version").textContent = chrome.runtime.getManifest().version;
 
 chrome.storage.local.get({ relay: "ws://127.0.0.1:8766/ext", token: "", browserName: "" }).then((c) => {
   $("relay").value = c.relay;
   $("token").value = c.token;
   $("browserName").value = c.browserName;
 });
+// The service worker creates a default name ("Vega 42") when none is stored
+chrome.storage.onChanged.addListener((c, area) => area === "local" && c.browserName && ($("browserName").value = c.browserName.newValue ?? ""));
 
 $("save").onclick = async () => {
   await chrome.storage.local.set({ relay: $("relay").value.trim(), token: $("token").value.trim(), browserName: $("browserName").value.trim() });
@@ -19,19 +23,18 @@ function siteList(id, area, key, sites) {
   const list = $(id);
   list.replaceChildren();
   for (const origin of Object.keys(sites).sort()) {
-    const li = document.createElement("li"), b = document.createElement("button");
-    li.textContent = origin + " ";
+    const li = document.createElement("li"), span = document.createElement("span"), b = document.createElement("button");
+    span.textContent = origin;
     b.textContent = msg("optRevoke");
-    b.style.margin = "0 0 0 .5em";
     b.onclick = async () => {
       const now = (await chrome.storage[area].get(key))[key] ?? {};
       delete now[origin];
       await chrome.storage[area].set({ [key]: now });
     };
-    li.append(b);
+    li.append(span, b);
     list.append(li);
   }
-  if (!list.children.length) list.innerHTML = `<li>${msg("optNone")}</li>`;
+  if (!list.children.length) list.innerHTML = `<li class="none">${msg("optNone")}</li>`;
 }
 
 async function showSites() {
@@ -47,15 +50,14 @@ async function showSites() {
   const bl = $("blocked");
   bl.replaceChildren();
   for (const d of blockedSites) {
-    const li = document.createElement("li"), b = document.createElement("button");
-    li.textContent = d + " ";
+    const li = document.createElement("li"), span = document.createElement("span"), b = document.createElement("button");
+    span.textContent = d;
     b.textContent = msg("optRemove");
-    b.style.margin = "0 0 0 .5em";
     b.onclick = () => chrome.storage.local.set({ blockedSites: blockedSites.filter((x) => x !== d) });
-    li.append(b);
+    li.append(span, b);
     bl.append(li);
   }
-  if (!bl.children.length) bl.innerHTML = `<li>${msg("optNone")}</li>`;
+  if (!bl.children.length) bl.innerHTML = `<li class="none">${msg("optNone")}</li>`;
   siteList("sessionSites", "session", "sessionSites", sessionSites);
 }
 for (const r of document.getElementsByName("mode")) r.onchange = () => chrome.storage.local.set({ siteMode: r.value });

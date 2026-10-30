@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "個別のタブを Hermes エージェントと共有します。接続はご自身のリレーを経由します。"
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: このタブを共有 / 共有を解除"
+  },
+  "badgeOff": {
+    "message": "オフ"
+  },
+  "overlayBar": {
+    "message": "Hermes がこのタブを操作しています"
+  },
+  "overlayStop": {
+    "message": "停止"
+  },
+  "askDeny": {
+    "message": "拒否"
+  },
+  "askOnce": {
+    "message": "今回のみ"
+  },
+  "askSession": {
+    "message": "サイト: 再起動まで"
+  },
+  "askAlways": {
+    "message": "サイト: 常に"
+  },
+  "askAll1h": {
+    "message": "全サイト: 1 時間"
+  },
+  "askText": {
+    "message": "Hermes が $HOST$ で操作しようとしています",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes が許可を求めています"
+  },
+  "notifSession": {
+    "message": "このサイトを再起動まで許可"
+  },
+  "notifAll1h": {
+    "message": "全サイトを 1 時間許可"
+  },
+  "label_read_page": {
+    "message": "ページを読み取り中"
+  },
+  "label_get_page_text": {
+    "message": "テキストを読み取り中"
+  },
+  "label_find": {
+    "message": "ページ内を検索中"
+  },
+  "label_javascript": {
+    "message": "スクリプトで読み取り中"
+  },
+  "label_form_input": {
+    "message": "フィールドに入力中"
+  },
+  "label_file_upload": {
+    "message": "ファイルをアップロード中"
+  },
+  "label_navigate": {
+    "message": "ページを開いています"
+  },
+  "label_read_console_messages": {
+    "message": "コンソールを読み取り中"
+  },
+  "label_read_network_requests": {
+    "message": "ネットワーク リクエストを読み取り中"
+  },
+  "label_handle_dialog": {
+    "message": "ダイアログに応答中"
+  },
+  "action_left_click": {
+    "message": "クリック"
+  },
+  "action_right_click": {
+    "message": "右クリック"
+  },
+  "action_double_click": {
+    "message": "ダブルクリック"
+  },
+  "action_triple_click": {
+    "message": "トリプルクリック"
+  },
+  "action_hover": {
+    "message": "ポイント中"
+  },
+  "action_left_click_drag": {
+    "message": "ドラッグ中"
+  },
+  "action_type": {
+    "message": "入力中"
+  },
+  "action_key": {
+    "message": "キー入力中"
+  },
+  "action_scroll": {
+    "message": "スクロール中"
+  },
+  "action_scroll_to": {
+    "message": "スクロールして移動"
+  },
+  "optSave": {
+    "message": "保存して接続"
+  },
+  "optSaved": {
+    "message": "保存しました。アイコンのバッジが空なら接続されています。"
+  },
+  "optBrowserHeading": {
+    "message": "ブラウザーでの Hermes"
+  },
+  "optEnabled": {
+    "message": "有効 (オフにすると Hermes はブラウザーで何もできません)"
+  },
+  "optActionsHeading": {
+    "message": "ウェブサイトでの操作"
+  },
+  "optActionsHelp": {
+    "message": "Hermes は自分のタブ内ならどこでも読み取れます。クリック、入力、フォームの操作には許可が必要です。"
+  },
+  "optModeAsk": {
+    "message": "許可済みのサイト以外では確認する"
+  },
+  "optModeAll": {
+    "message": "すべてのサイトを常に許可"
+  },
+  "optTempHeading": {
+    "message": "すべてのサイトを一時的に許可"
+  },
+  "opt1h": {
+    "message": "1 時間"
+  },
+  "opt8h": {
+    "message": "8 時間"
+  },
+  "optUntilRestart": {
+    "message": "ブラウザーの再起動まで"
+  },
+  "optEnd": {
+    "message": "終了"
+  },
+  "optAlwaysHeading": {
+    "message": "常に許可"
+  },
+  "optSessionHeading": {
+    "message": "ブラウザーの再起動まで許可"
+  },
+  "optBlockedHeading": {
+    "message": "ブロックしたサイト"
+  },
+  "optBlockedHelp": {
+    "message": "ここでは Hermes は読み取りも含めて何もできません (サブドメインを含む)。"
+  },
+  "optAdd": {
+    "message": "追加"
+  },
+  "optRevoke": {
+    "message": "取り消す"
+  },
+  "optRemove": {
+    "message": "削除"
+  },
+  "optNone": {
+    "message": "なし"
+  },
+  "optActiveSession": {
+    "message": "ブラウザーの再起動まで有効です。"
+  },
+  "optActiveUntil": {
+    "message": "$TIME$ まで有効です。",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "オフです。"
+  },
+  "optBadDomain": {
+    "message": "example.com のようなドメインを入力してください"
+  },
+  "pairTitle": {
+    "message": "Hermes がブラウザーを使おうとしています"
+  },
+  "pairText": {
+    "message": "このブラウザーを Hermes で使いますか? Hermes に作業させたいブラウザーで [接続] をクリックしてください。"
+  },
+  "pairConnect": {
+    "message": "接続"
+  },
+  "optBrowserName": {
+    "message": "このブラウザーの名前"
+  },
+  "optBrowserNameHelp": {
+    "message": "複数のブラウザーがリレーに接続されているときに Hermes に表示されます (例: デスクトップ、ノート PC)。"
+  },
+  "optConnectionHeading": {
+    "message": "接続"
+  },
+  "optRelayHelp": {
+    "message": "リレーの WebSocket アドレスです。"
+  },
+  "optTokenHelp": {
+    "message": "リレーのアクセス トークンです (HERMES_TABS_TOKEN)。"
+  }
+}

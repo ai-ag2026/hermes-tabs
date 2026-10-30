@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "將個別分頁分享給 Hermes 代理程式；連線透過你自己的中繼伺服器進行。"
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs：分享 / 取消分享此分頁"
+  },
+  "badgeOff": {
+    "message": "離線"
+  },
+  "overlayBar": {
+    "message": "Hermes 正在控制此分頁"
+  },
+  "overlayStop": {
+    "message": "停止"
+  },
+  "askDeny": {
+    "message": "拒絕"
+  },
+  "askOnce": {
+    "message": "僅此一次"
+  },
+  "askSession": {
+    "message": "此網站：直到重新啟動"
+  },
+  "askAlways": {
+    "message": "此網站：一律允許"
+  },
+  "askAll1h": {
+    "message": "所有網站：1 小時"
+  },
+  "askText": {
+    "message": "Hermes 想在 $HOST$ 上執行操作",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes 請求授權"
+  },
+  "notifSession": {
+    "message": "此網站，直到重新啟動"
+  },
+  "notifAll1h": {
+    "message": "所有網站，1 小時"
+  },
+  "label_read_page": {
+    "message": "正在讀取頁面"
+  },
+  "label_get_page_text": {
+    "message": "正在讀取文字"
+  },
+  "label_find": {
+    "message": "正在頁面中搜尋"
+  },
+  "label_javascript": {
+    "message": "正在透過指令碼讀取"
+  },
+  "label_form_input": {
+    "message": "正在填寫欄位"
+  },
+  "label_file_upload": {
+    "message": "正在上傳檔案"
+  },
+  "label_navigate": {
+    "message": "正在開啟頁面"
+  },
+  "label_read_console_messages": {
+    "message": "正在讀取主控台"
+  },
+  "label_read_network_requests": {
+    "message": "正在讀取網路要求"
+  },
+  "label_handle_dialog": {
+    "message": "正在回應對話方塊"
+  },
+  "action_left_click": {
+    "message": "點擊"
+  },
+  "action_right_click": {
+    "message": "按右鍵"
+  },
+  "action_double_click": {
+    "message": "按兩下"
+  },
+  "action_triple_click": {
+    "message": "點三下"
+  },
+  "action_hover": {
+    "message": "指向"
+  },
+  "action_left_click_drag": {
+    "message": "拖曳"
+  },
+  "action_type": {
+    "message": "輸入"
+  },
+  "action_key": {
+    "message": "按鍵"
+  },
+  "action_scroll": {
+    "message": "捲動"
+  },
+  "action_scroll_to": {
+    "message": "捲動至"
+  },
+  "optSave": {
+    "message": "儲存並連線"
+  },
+  "optSaved": {
+    "message": "已儲存。若圖示上的徽章為空白，表示已連線。"
+  },
+  "optBrowserHeading": {
+    "message": "瀏覽器中的 Hermes"
+  },
+  "optEnabled": {
+    "message": "啟用（關閉後，Hermes 無法在瀏覽器中執行任何操作）"
+  },
+  "optActionsHeading": {
+    "message": "網站上的操作"
+  },
+  "optActionsHelp": {
+    "message": "Hermes 可在其分頁中隨處讀取。點擊、輸入和填寫表單須經授權。"
+  },
+  "optModeAsk": {
+    "message": "詢問（已允許的網站除外）"
+  },
+  "optModeAll": {
+    "message": "一律允許所有網站"
+  },
+  "optTempHeading": {
+    "message": "暫時允許所有網站"
+  },
+  "opt1h": {
+    "message": "1 小時"
+  },
+  "opt8h": {
+    "message": "8 小時"
+  },
+  "optUntilRestart": {
+    "message": "直到瀏覽器重新啟動"
+  },
+  "optEnd": {
+    "message": "結束"
+  },
+  "optAlwaysHeading": {
+    "message": "一律允許"
+  },
+  "optSessionHeading": {
+    "message": "允許至瀏覽器重新啟動"
+  },
+  "optBlockedHeading": {
+    "message": "已封鎖的網站"
+  },
+  "optBlockedHelp": {
+    "message": "Hermes 在這些網站上不能執行任何操作，包括讀取（含子網域）。"
+  },
+  "optAdd": {
+    "message": "新增"
+  },
+  "optRevoke": {
+    "message": "撤銷"
+  },
+  "optRemove": {
+    "message": "移除"
+  },
+  "optNone": {
+    "message": "無"
+  },
+  "optActiveSession": {
+    "message": "有效至瀏覽器重新啟動。"
+  },
+  "optActiveUntil": {
+    "message": "有效至 $TIME$。",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "已關閉。"
+  },
+  "optBadDomain": {
+    "message": "請輸入網域，例如 example.com"
+  },
+  "pairTitle": {
+    "message": "Hermes 想使用一個瀏覽器"
+  },
+  "pairText": {
+    "message": "要將此瀏覽器用於 Hermes 嗎？請在希望 Hermes 工作的瀏覽器中點擊「連線」。"
+  },
+  "pairConnect": {
+    "message": "連線"
+  },
+  "optBrowserName": {
+    "message": "此瀏覽器的名稱"
+  },
+  "optBrowserNameHelp": {
+    "message": "當多個瀏覽器連線到中繼伺服器時，Hermes 會看到此名稱（例如：桌機、筆電）。"
+  },
+  "optConnectionHeading": {
+    "message": "連線"
+  },
+  "optRelayHelp": {
+    "message": "你的中繼伺服器的 WebSocket 位址。"
+  },
+  "optTokenHelp": {
+    "message": "中繼伺服器的存取權杖（HERMES_TABS_TOKEN）。"
+  }
+}

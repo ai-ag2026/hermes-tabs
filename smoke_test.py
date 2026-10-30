@@ -359,6 +359,19 @@ async def permissions(t: T, base: str):
                   "await chrome.storage.local.set({siteMode: 'all'}); return 1; })")
 
 
+def check_locales():
+    """Every _locales/*/messages.json has the keys of en and the same placeholders."""
+    loc = HERE / "extension" / "_locales"
+    en = json.loads((loc / "en" / "messages.json").read_text())
+    marks = lambda m: (sorted(re.findall(r"\$\w+\$", m["message"])), m.get("placeholders"))
+    for f in sorted(loc.glob("*/messages.json")):
+        other = json.loads(f.read_text())
+        assert other.keys() == en.keys(), (f.parent.name, set(other) ^ set(en))
+        for k, m in en.items():
+            assert marks(other[k]) == marks(m), (f.parent.name, k)
+    assert len(list(loc.iterdir())) == 9, sorted(p.name for p in loc.iterdir())
+
+
 async def wait_connected():
     status = urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/status", headers={"Authorization": f"Bearer {TOKEN}"})
     for _ in range(100):  # 20 s: under load the browser takes longer to start
@@ -739,6 +752,9 @@ async def run(scale: int):
                 await asyncio.sleep(0.2)
         await set_extension_config()
         await wait_connected()
+        status = urllib.request.Request(f"http://127.0.0.1:{RELAY_PORT}/admin/status", headers={"Authorization": f"Bearer {TOKEN}"})
+        name = json.load(urllib.request.urlopen(status))["browsers"][0]["name"]
+        assert re.fullmatch(r"[A-Z][a-z]+ [1-9][0-9]", name), name  # default name: star + number
         http = create_mcp_http_client(headers={"Authorization": f"Bearer {TOKEN}"})
         async with http, streamable_http_client(f"http://127.0.0.1:{RELAY_PORT}/mcp", http_client=http) as streams:
             async with ClientSession(streams[0], streams[1]) as s:
@@ -790,5 +806,6 @@ async def run(scale: int):
 
 
 if __name__ == "__main__":
+    check_locales()
     for scale in (1, 2):
         asyncio.run(run(scale))

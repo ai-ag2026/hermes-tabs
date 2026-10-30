@@ -420,42 +420,68 @@ function HERMES_PAGE(op, arg) {
     let host = TOP.__hermesOverlay;
     if (!host || !host.isConnected) {
       host = document.createElement("hermes-tabs-overlay");
-      host.style.cssText = "all: initial; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none;";
+      // !important inline: page rules cannot hide, dim or move the host (opacity, filter, transform, ...)
+      host.style.cssText = "all: initial !important; position: fixed !important; inset: 0 !important; z-index: 2147483647 !important; pointer-events: none !important;";
       const root = host.attachShadow({ mode: "closed" });
+      // Colours: Hermes desktop default theme ("nous"), light and dark, resolved to fixed values. Set on every
+      // element, not only :host - page rules on the host element would override custom properties defined there.
       root.innerHTML = `<style>
-        :host, * { box-sizing: border-box; font: 13px/1.3 system-ui, sans-serif; }
-        .frame { position: fixed; inset: 0; border: 3px solid #a855f7; box-shadow: inset 0 0 18px rgba(168,85,247,.55);
+        :host, * { --bg: #fdfdfd; --fg: #242528; --stroke: #c3d1f0; --accent: #0053fd; --on-accent: #fff; --ctl: #e8edf6;
+                --ctl-hover: #d9e2f3; --glow: rgba(0,83,253,.35); --danger: #cf2d56; --shadow: rgba(0,0,0,.18); }
+        @media (prefers-color-scheme: dark) {
+          :host, * { --bg: #16181c; --fg: #d9e0e6; --stroke: #2b364d; --accent: #4a84fe; --on-accent: #161616; --ctl: #242a38;
+                  --ctl-hover: #303b52; --glow: rgba(74,132,254,.4); --shadow: rgba(0,0,0,.55); }
+        }
+        :host, * { box-sizing: border-box; font: 13px/1.4 "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+        .frame { position: fixed; inset: 0; border: 2px solid var(--accent); box-shadow: inset 0 0 16px var(--glow);
                  opacity: 0; transition: opacity .3s; pointer-events: none; }
         .cursor { position: fixed; left: 0; top: 0; width: 22px; height: 22px; opacity: 0; pointer-events: none;
                   transition: left .35s ease, top .35s ease, opacity .3s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
-        .ring { position: fixed; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 3px solid #a855f7;
+        .cursor path { fill: var(--accent); }
+        .ring { position: fixed; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 2px solid var(--accent);
                 border-radius: 50%; opacity: 0; pointer-events: none; }
         .ring.go { animation: ring .55s ease-out; }
         @keyframes ring { from { opacity: 1; transform: scale(.4); } to { opacity: 0; transform: scale(1.4); } }
-        .label { position: fixed; max-width: 360px; padding: 4px 8px; border-radius: 6px; background: #2e1065; color: #fff;
-                 opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .label, .bar, .ask { background: var(--bg); color: var(--fg); border: 1px solid var(--stroke); border-radius: 5px;
+                             box-shadow: 0 2px 4px -2px var(--shadow), 0 10px 28px -8px var(--shadow); }
+        .label { position: fixed; max-width: 360px; padding: 4px 8px; opacity: 0; transition: opacity .3s; pointer-events: none;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bar { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); display: none; align-items: center; gap: 8px;
-               padding: 6px 8px 6px 12px; border-radius: 999px; background: #2e1065; color: #fff; pointer-events: auto; white-space: nowrap;
-               box-shadow: 0 2px 10px rgba(0,0,0,.35); }
-        .bar button, .ask button { border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-weight: 600; }
-        .stop { background: #ef4444; color: #fff; }
-        .ask { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); display: none; max-width: 520px;
-               padding: 12px 14px; border-radius: 10px; background: #fff; color: #111; pointer-events: auto;
-               box-shadow: 0 4px 24px rgba(0,0,0,.35); border: 2px solid #a855f7; }
-        .ask .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: flex-end; }
-        .once, .session, .always, .all1h { background: #a855f7; color: #fff; } .deny { background: #e5e7eb; color: #111; }
+               padding: 5px 5px 5px 8px; pointer-events: auto; white-space: nowrap; }
+        .logo, .logo img { display: block; width: 18px; height: 18px; border-radius: 4px; flex: none; }
+        .logo img { box-shadow: 0 0 0 1px var(--stroke); }
+        .ask .logo, .ask .logo img { width: 22px; height: 22px; border-radius: 5px; }
+        button { border: 0; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-weight: 500;
+                 background: var(--ctl); color: var(--fg); }
+        button:hover { background: var(--ctl-hover); }
+        .stop, .stop:hover { background: var(--danger); color: #fff; }
+        .once, .once:hover { background: var(--accent); color: var(--on-accent); }
+        .ask { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); display: none; width: max-content; max-width: min(600px, calc(100vw - 24px));
+               padding: 12px; pointer-events: auto; border-top: 2px solid var(--accent); }
+        .ask .head { display: flex; align-items: center; gap: 10px; }
+        .q { font-weight: 600; }
+        .ask .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; justify-content: flex-end; }
         .hidden { display: none !important; }
       </style>
       <div class="frame"></div><div class="ring"></div>
-      <svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7.5 19 2.4-7.6L20.5 11z" fill="#a855f7" stroke="#fff" stroke-width="1.5"/></svg>
+      <svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7.5 19 2.4-7.6L20.5 11z" stroke="#fff" stroke-width="1.5"/></svg>
       <div class="label"></div>
-      <div class="bar"><span class="barText"></span><button class="stop"></button></div>
-      <div class="ask"><div class="q"></div><div class="row">
+      <div class="bar"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><span class="barText"></span><button class="stop"></button></div>
+      <div class="ask"><div class="head"><picture class="logo"><source media="(prefers-color-scheme: dark)"><img alt=""></picture><div class="q"></div></div><div class="row">
         <button class="deny"></button><button class="once"></button><button class="session"></button>
         <button class="always"></button><button class="all1h"></button></div></div>`;
       const t = o.t ?? {};
+      host.dir = t["@@bidi_dir"] || "ltr";
       for (const [c, k] of [["barText", "overlayBar"], ["stop", "overlayStop"], ["deny", "askDeny"], ["once", "askOnce"],
         ["session", "askSession"], ["always", "askAlways"], ["all1h", "askAll1h"]]) root.querySelector("." + c).textContent = t[k] ?? k;
+      // Logo (light, dark) as data: URLs; a page whose CSP forbids data: images simply shows none.
+      for (const pic of root.querySelectorAll(".logo")) {
+        const img = pic.querySelector("img");
+        if (!o.logo?.[0]) { pic.remove(); continue; }
+        img.onerror = () => pic.remove();
+        img.src = o.logo[0];
+        pic.querySelector("source").srcset = o.logo[1] || o.logo[0];
+      }
       const send = (payload) => (e) => {
         if (!e.isTrusted) return; // only real user clicks
         e.stopPropagation(); e.preventDefault();
@@ -468,7 +494,7 @@ function HERMES_PAGE(op, arg) {
       TOP.__hermesRoot = root;
     }
     const root = TOP.__hermesRoot, $ = (c) => root.querySelector(c);
-    if (o.hidden !== undefined) host.style.visibility = o.hidden ? "hidden" : "visible";
+    if (o.hidden !== undefined) host.style.setProperty("visibility", o.hidden ? "hidden" : "visible", "important");
     if (o.passthrough !== undefined) setPassthrough(root, o.passthrough);
     if (o.active) {
       $(".frame").style.opacity = 1;

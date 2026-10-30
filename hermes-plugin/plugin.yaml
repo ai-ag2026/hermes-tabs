@@ -1,5 +1,5 @@
 name: hermes-tabs
-version: "0.2.0"
+version: "0.3.0"
 description: "Hermes in the browser - permission settings: master switch, default for all websites (ask / allow all), time window, allowed and blocked sites. The values live in the browser extension and apply there; this plugin shows them under Settings -> Plugins and also enforces blocked sites for Hermes' own browser tools."
 author: "ai-ag2026"
 license: MIT

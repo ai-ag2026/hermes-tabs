@@ -12,6 +12,18 @@ Gedacht ist es für alle, die einen Agenten Websites nutzen lassen wollen, die k
 
 Stand: früh. Interaktiv an ~36 gängigen Websites getestet, dazu ein automatischer Ende-zu-Ende-Test (siehe [Tests](#tests)).
 
+![Hermes fragt vor dem ersten Klick auf einer Website; Rahmen, Zeiger und Leiste zeigen, dass er den Tab steuert](docs/consent-de.png)
+
+<details><summary>Optionsseite der Extension und Einstellungsseite in Hermes</summary>
+
+![Optionsseite der Extension](docs/options-de.png)
+
+![Einstellungsseite des Hermes-Plugins (hier mit englischer Hermes-Oberfläche; sie folgt der in Hermes eingestellten Sprache)](docs/plugin-en.png)
+
+</details>
+
+<sub>Die Screenshots zeigen den Wikipedia-Artikel [„Hermes“](https://de.wikipedia.org/wiki/Hermes) ([en](https://en.wikipedia.org/wiki/Hermes)) von Wikipedia-Autorinnen und -Autoren, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de), ergänzt um die Einblendung von hermes-tabs (Bild im Artikel: gemeinfrei). Diese Screenshots stehen deshalb unter CC BY-SA 4.0, nicht unter MIT. Die Freigabefrage ist mit `docs/screenshots.py` nachgestellt.</sub>
+
 ## Architektur
 
 ```
@@ -100,7 +112,7 @@ Zum optionalen Hermes-Plugin (Einstellungsseite, zusätzliche Leitplanken) siehe
 | `HERMES_TABS_GIF_DIR` | Ordner für exportierte GIFs, Vorgabe `~/.cache/hermes-tabs`. Er muss dem Relay-Benutzer gehören und darf für andere nicht beschreibbar sein. |
 | `HERMES_TABS_UPLOAD_ROOTS` | Durch Doppelpunkt getrennte Ordner, aus denen `file_upload(paths=...)` lesen darf, Vorgabe: nur `HERMES_TABS_GIF_DIR`. |
 
-**Extension** (Optionsseite): Relay-Adresse (Vorgabe `ws://127.0.0.1:8766/ext`) und Token. Die Oberfläche ist englisch mit deutscher Übersetzung.
+**Extension** (Optionsseite): Relay-Adresse (Vorgabe `ws://127.0.0.1:8766/ext`), Token und der Name dieses Browsers (beim ersten Start ein zufälliger Sternname wie „Vega 42“, änderbar). Die Oberfläche folgt der Browsersprache: Englisch, Deutsch, Französisch, Spanisch, Russisch, Japanisch, Chinesisch (vereinfacht und traditionell) und Arabisch.
 
 **Hermes-Plugin** (Umgebungsvariablen des Hermes-Prozesses): `HERMES_TABS_RELAY` (Vorgabe `http://127.0.0.1:8766`), `HERMES_TABS_ADMIN_TOKEN`, `HERMES_TABS_OWN_HOSTS` (siehe unten).
 
@@ -247,3 +259,5 @@ Ports lassen sich mit `SMOKE_RELAY_PORT`, `SMOKE_PAGE_PORT` und `SMOKE_CDP_PORT`
 ## Lizenz
 
 MIT – siehe [LICENSE](LICENSE).
+
+Das Hermes-Logo in der Extension (Symbol, Optionsseite, Einblendung) ist © Nous Research, MIT-Lizenz (siehe [extension/NOTICE](extension/NOTICE)). hermes-tabs ist kein offizielles Projekt von Nous Research.

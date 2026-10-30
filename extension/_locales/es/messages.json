@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "Comparte pestañas concretas con el agente Hermes; la conexión pasa por tu propio relay."
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: compartir / dejar de compartir esta pestaña"
+  },
+  "badgeOff": {
+    "message": "off"
+  },
+  "overlayBar": {
+    "message": "Hermes está controlando esta pestaña"
+  },
+  "overlayStop": {
+    "message": "Detener"
+  },
+  "askDeny": {
+    "message": "No"
+  },
+  "askOnce": {
+    "message": "Una vez"
+  },
+  "askSession": {
+    "message": "Sitio: hasta reiniciar"
+  },
+  "askAlways": {
+    "message": "Sitio: siempre"
+  },
+  "askAll1h": {
+    "message": "Todos los sitios: 1 h"
+  },
+  "askText": {
+    "message": "Hermes quiere actuar en $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes solicita permiso"
+  },
+  "notifSession": {
+    "message": "Este sitio hasta reiniciar"
+  },
+  "notifAll1h": {
+    "message": "Todos los sitios durante 1 hora"
+  },
+  "label_read_page": {
+    "message": "leyendo la página"
+  },
+  "label_get_page_text": {
+    "message": "leyendo el texto"
+  },
+  "label_find": {
+    "message": "buscando en la página"
+  },
+  "label_javascript": {
+    "message": "leyendo mediante script"
+  },
+  "label_form_input": {
+    "message": "rellenando un campo"
+  },
+  "label_file_upload": {
+    "message": "subiendo un archivo"
+  },
+  "label_navigate": {
+    "message": "abriendo una página"
+  },
+  "label_read_console_messages": {
+    "message": "leyendo la consola"
+  },
+  "label_read_network_requests": {
+    "message": "leyendo solicitudes de red"
+  },
+  "label_handle_dialog": {
+    "message": "respondiendo a un diálogo"
+  },
+  "action_left_click": {
+    "message": "Clic"
+  },
+  "action_right_click": {
+    "message": "Clic derecho"
+  },
+  "action_double_click": {
+    "message": "Doble clic"
+  },
+  "action_triple_click": {
+    "message": "Triple clic"
+  },
+  "action_hover": {
+    "message": "Señalando"
+  },
+  "action_left_click_drag": {
+    "message": "Arrastrando"
+  },
+  "action_type": {
+    "message": "Escribiendo"
+  },
+  "action_key": {
+    "message": "Pulsando teclas"
+  },
+  "action_scroll": {
+    "message": "Desplazando"
+  },
+  "action_scroll_to": {
+    "message": "Desplazando hasta"
+  },
+  "optSave": {
+    "message": "Guardar y conectar"
+  },
+  "optSaved": {
+    "message": "Guardado. Si el distintivo del icono está vacío, la conexión está activa."
+  },
+  "optBrowserHeading": {
+    "message": "Hermes en el navegador"
+  },
+  "optEnabled": {
+    "message": "Activado (desactivado: Hermes no puede hacer nada en el navegador)"
+  },
+  "optActionsHeading": {
+    "message": "Acciones en sitios web"
+  },
+  "optActionsHelp": {
+    "message": "Hermes puede leer en cualquier parte de sus pestañas. Hacer clic, escribir y rellenar formularios, solo con permiso."
+  },
+  "optModeAsk": {
+    "message": "Preguntar, salvo en los sitios permitidos"
+  },
+  "optModeAll": {
+    "message": "Permitir siempre todos los sitios"
+  },
+  "optTempHeading": {
+    "message": "Permitir temporalmente todos los sitios"
+  },
+  "opt1h": {
+    "message": "1 hora"
+  },
+  "opt8h": {
+    "message": "8 horas"
+  },
+  "optUntilRestart": {
+    "message": "Hasta reiniciar el navegador"
+  },
+  "optEnd": {
+    "message": "Finalizar"
+  },
+  "optAlwaysHeading": {
+    "message": "Siempre permitidos"
+  },
+  "optSessionHeading": {
+    "message": "Permitidos hasta reiniciar el navegador"
+  },
+  "optBlockedHeading": {
+    "message": "Sitios bloqueados"
+  },
+  "optBlockedHelp": {
+    "message": "Aquí Hermes no puede hacer nada, ni siquiera leer (subdominios incluidos)."
+  },
+  "optAdd": {
+    "message": "Añadir"
+  },
+  "optRevoke": {
+    "message": "Revocar"
+  },
+  "optRemove": {
+    "message": "Quitar"
+  },
+  "optNone": {
+    "message": "ninguno"
+  },
+  "optActiveSession": {
+    "message": "Activo hasta reiniciar el navegador."
+  },
+  "optActiveUntil": {
+    "message": "Activo hasta las $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "Desactivado."
+  },
+  "optBadDomain": {
+    "message": "Introduce un dominio como example.com"
+  },
+  "pairTitle": {
+    "message": "Hermes quiere usar un navegador"
+  },
+  "pairText": {
+    "message": "¿Usar este navegador para Hermes? Haz clic en Conectar en el navegador en el que debe trabajar Hermes."
+  },
+  "pairConnect": {
+    "message": "Conectar"
+  },
+  "optBrowserName": {
+    "message": "Nombre de este navegador"
+  },
+  "optBrowserNameHelp": {
+    "message": "Hermes lo ve cuando hay varios navegadores conectados al relay (p. ej., Escritorio, Portátil)."
+  },
+  "optConnectionHeading": {
+    "message": "Conexión"
+  },
+  "optRelayHelp": {
+    "message": "Dirección WebSocket de tu relay."
+  },
+  "optTokenHelp": {
+    "message": "Token de acceso del relay (HERMES_TABS_TOKEN)."
+  }
+}

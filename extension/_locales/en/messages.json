@@ -205,5 +205,14 @@
   },
   "optBrowserNameHelp": {
     "message": "Shown to Hermes when several browsers are connected to the relay (e.g. Desktop, Laptop)."
+  },
+  "optConnectionHeading": {
+    "message": "Connection"
+  },
+  "optRelayHelp": {
+    "message": "WebSocket address of your relay."
+  },
+  "optTokenHelp": {
+    "message": "Access token of the relay (HERMES_TABS_TOKEN)."
   }
 }

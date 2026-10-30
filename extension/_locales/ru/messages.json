@@ -1,0 +1,218 @@
+{
+  "extName": {
+    "message": "Hermes Tabs"
+  },
+  "extDescription": {
+    "message": "Открывает агенту Hermes доступ к отдельным вкладкам; соединение идёт через ваш собственный relay-сервер."
+  },
+  "actionTitle": {
+    "message": "Hermes Tabs: открыть / закрыть доступ к этой вкладке"
+  },
+  "badgeOff": {
+    "message": "выкл"
+  },
+  "overlayBar": {
+    "message": "Hermes управляет этой вкладкой"
+  },
+  "overlayStop": {
+    "message": "Стоп"
+  },
+  "askDeny": {
+    "message": "Нет"
+  },
+  "askOnce": {
+    "message": "Один раз"
+  },
+  "askSession": {
+    "message": "Сайт: до перезапуска"
+  },
+  "askAlways": {
+    "message": "Сайт: всегда"
+  },
+  "askAll1h": {
+    "message": "Все сайты: 1 ч"
+  },
+  "askText": {
+    "message": "Hermes хочет выполнить действия на $HOST$",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  },
+  "notifTitle": {
+    "message": "Hermes запрашивает разрешение"
+  },
+  "notifSession": {
+    "message": "Этот сайт до перезапуска"
+  },
+  "notifAll1h": {
+    "message": "Все сайты на 1 час"
+  },
+  "label_read_page": {
+    "message": "читает страницу"
+  },
+  "label_get_page_text": {
+    "message": "читает текст"
+  },
+  "label_find": {
+    "message": "ищет на странице"
+  },
+  "label_javascript": {
+    "message": "читает с помощью скрипта"
+  },
+  "label_form_input": {
+    "message": "заполняет поле"
+  },
+  "label_file_upload": {
+    "message": "загружает файл"
+  },
+  "label_navigate": {
+    "message": "открывает страницу"
+  },
+  "label_read_console_messages": {
+    "message": "читает консоль"
+  },
+  "label_read_network_requests": {
+    "message": "читает сетевые запросы"
+  },
+  "label_handle_dialog": {
+    "message": "отвечает на диалог"
+  },
+  "action_left_click": {
+    "message": "Щелчок"
+  },
+  "action_right_click": {
+    "message": "Правый щелчок"
+  },
+  "action_double_click": {
+    "message": "Двойной щелчок"
+  },
+  "action_triple_click": {
+    "message": "Тройной щелчок"
+  },
+  "action_hover": {
+    "message": "Наводит указатель"
+  },
+  "action_left_click_drag": {
+    "message": "Перетаскивает"
+  },
+  "action_type": {
+    "message": "Печатает"
+  },
+  "action_key": {
+    "message": "Нажимает клавиши"
+  },
+  "action_scroll": {
+    "message": "Прокручивает"
+  },
+  "action_scroll_to": {
+    "message": "Прокручивает к"
+  },
+  "optSave": {
+    "message": "Сохранить и подключить"
+  },
+  "optSaved": {
+    "message": "Сохранено. Если на значке нет метки, соединение установлено."
+  },
+  "optBrowserHeading": {
+    "message": "Hermes в браузере"
+  },
+  "optEnabled": {
+    "message": "Включено (если выключено, Hermes ничего не может делать в браузере)"
+  },
+  "optActionsHeading": {
+    "message": "Действия на сайтах"
+  },
+  "optActionsHelp": {
+    "message": "Читать Hermes может везде в своих вкладках. Щелчки, ввод текста и формы — только с разрешения."
+  },
+  "optModeAsk": {
+    "message": "Спрашивать, кроме разрешённых сайтов"
+  },
+  "optModeAll": {
+    "message": "Всегда разрешать все сайты"
+  },
+  "optTempHeading": {
+    "message": "Временно разрешить все сайты"
+  },
+  "opt1h": {
+    "message": "1 час"
+  },
+  "opt8h": {
+    "message": "8 часов"
+  },
+  "optUntilRestart": {
+    "message": "До перезапуска браузера"
+  },
+  "optEnd": {
+    "message": "Завершить"
+  },
+  "optAlwaysHeading": {
+    "message": "Разрешены всегда"
+  },
+  "optSessionHeading": {
+    "message": "Разрешены до перезапуска браузера"
+  },
+  "optBlockedHeading": {
+    "message": "Заблокированные сайты"
+  },
+  "optBlockedHelp": {
+    "message": "Здесь Hermes ничего не может делать, даже читать (включая поддомены)."
+  },
+  "optAdd": {
+    "message": "Добавить"
+  },
+  "optRevoke": {
+    "message": "Отозвать"
+  },
+  "optRemove": {
+    "message": "Удалить"
+  },
+  "optNone": {
+    "message": "нет"
+  },
+  "optActiveSession": {
+    "message": "Действует до перезапуска браузера."
+  },
+  "optActiveUntil": {
+    "message": "Действует до $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "14:30"
+      }
+    }
+  },
+  "optOff": {
+    "message": "Выключено."
+  },
+  "optBadDomain": {
+    "message": "Введите домен, например example.com"
+  },
+  "pairTitle": {
+    "message": "Hermes хочет использовать браузер"
+  },
+  "pairText": {
+    "message": "Использовать этот браузер для Hermes? Нажмите «Подключить» в том браузере, в котором должен работать Hermes."
+  },
+  "pairConnect": {
+    "message": "Подключить"
+  },
+  "optBrowserName": {
+    "message": "Имя этого браузера"
+  },
+  "optBrowserNameHelp": {
+    "message": "Hermes видит его, когда к relay-серверу подключено несколько браузеров (например, «Рабочий», «Ноутбук»)."
+  },
+  "optConnectionHeading": {
+    "message": "Подключение"
+  },
+  "optRelayHelp": {
+    "message": "WebSocket-адрес вашего relay-сервера."
+  },
+  "optTokenHelp": {
+    "message": "Токен доступа relay-сервера (HERMES_TABS_TOKEN)."
+  }
+}
