@@ -113,6 +113,15 @@ class T:
         return "\n".join(c.text for c in r.content if c.type == "text")
 
 
+async def fresh(name, **args):
+    """One call in an MCP session of its own, as gateways like MCPHub open one per call."""
+    http = create_mcp_http_client(headers={"Authorization": f"Bearer {TOKEN}"})
+    async with http, streamable_http_client(f"http://127.0.0.1:{RELAY_PORT}/mcp", http_client=http) as streams:
+        async with ClientSession(streams[0], streams[1]) as s:
+            await s.initialize()
+            return await T(s)(name, **args)
+
+
 @contextlib.asynccontextmanager
 async def fake_browser(device, name="Fake", pair=None, hold=()):
     """A second browser at the relay: answers every command with "fake:<name>:<method>", accepts "pair"
@@ -550,6 +559,8 @@ def check_locales():
         for k, m in en.items():
             assert marks(other[k]) == marks(m), (f.parent.name, k)
     assert len(list(loc.iterdir())) == 9, sorted(p.name for p in loc.iterdir())
+    # relay.CONNECT_HELP quotes these two texts to the user
+    assert (en["optSave"]["message"], en["badgeOff"]["message"]) == ("Save and connect", "off")
 
 
 async def wait_connected():
@@ -851,7 +862,11 @@ async def scenario(t: T, tmp: Path):
             assert await t("tabs_context") == "fake:Fake 2:tabs_context"  # the selection follows the deviceId
     await asyncio.sleep(0.3)
     r = await t.raw("tabs_context")  # the selected browser went away: no fallback to another browser
-    assert r.is_error and "not connected" in r.content[0].text, r.content[0].text
+    # ... and the error tells the user's real steps and names the browser still connected
+    assert r.is_error and 'browser "Fake 2" is not connected' in r.content[0].text, r.content[0].text
+    assert "Save and connect" in r.content[0].text and "select_browser" in r.content[0].text, r.content[0].text
+    out = await t("list_connected_browsers")
+    assert '"Fake 2" is not connected' in out and "Save and connect" in out, out
     await t("select_browser", deviceId=real)
 
     # (Extension reload is covered by a live test in a real browser: headless, reload() removes an extension loaded via command line.)
@@ -913,6 +928,26 @@ async def scenario(t: T, tmp: Path):
 
     await permissions(t, base)
     await safety(t, base, tmp / "relay.log")
+
+    # The agent's own tab stays usable across MCP sessions: the share belongs to the browser, not to a session
+    xtid = json.loads(await fresh("tabs_create", url=f"{base}/two.html"))["tabId"]
+    assert "two" in await fresh("get_page_text", tabId=xtid)
+    assert xtid in [x["tabId"] for x in json.loads(await fresh("tabs_context"))]
+    assert await sw_eval(f"chrome.tabs.get({xtid}).then((t) => t.active)") is False  # background by default
+    # Withdrawn with the toolbar icon: the agent is told why, and the tab leaves the agent's group (no re-adoption)
+    await sw_eval(f"chrome.tabs.get({xtid}).then(toggleShare).then(() => 1)")
+    r = await t.raw("navigate", tabId=xtid, url=f"{base}/index.html")
+    assert r.is_error and "not shared with you" in r.content[0].text and "toolbar icon" in r.content[0].text, r.content[0].text
+    assert await sw_eval(f"chrome.tabs.get({xtid}).then((t) => t.groupId)") == -1
+    assert str(xtid) not in await sw_eval("(sharedCache = null, getShared())")
+    await sw_eval(f"chrome.tabs.remove({xtid}).then(() => 1)")
+    # active=true opens it in the foreground; a closed tab says it was closed
+    atid = json.loads(await t("tabs_create", url=f"{base}/two.html", active=True))["tabId"]
+    assert await sw_eval(f"chrome.tabs.get({atid}).then((t) => t.active)") is True
+    await sw_eval(f"chrome.tabs.remove({atid}).then(() => 1)")
+    await asyncio.sleep(0.3)
+    r = await t.raw("get_page_text", tabId=atid)
+    assert r.is_error and "was closed" in r.content[0].text, r.content[0].text
 
     # Limits and cleanup
     denied = await t.raw("read_page", tabId=tid + 1000)

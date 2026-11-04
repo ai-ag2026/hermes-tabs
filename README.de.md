@@ -43,7 +43,7 @@ Stand: früh. Interaktiv an ~36 gängigen Websites getestet, dazu ein automatisc
 - Die Extension baut die Verbindung **nach außen** zum Relay auf. Auf dem Browser-Rechner läuft kein Server, und es ist kein Port offen.
 - Das Relay stellt dem Agenten die Werkzeuge per MCP (Streamable HTTP, zustandslos, JSON-Antworten) unter `/mcp` bereit.
 - Mehrere Browser können am selben Relay hängen (z. B. Desktop und Laptop). Alle Aufrufe gehen an den ausgewählten Browser; ein später verbundener übernimmt nie. Ist nur einer verbunden, wird er automatisch gewählt; bei mehreren fragt dich der Agent (`list_connected_browsers`, `select_browser`) oder du klickst im gewünschten Browser auf „Verbinden“ (`switch_browser`), wie bei Claude in Chrome.
-- Ist der Browser zu, scheitern Aufrufe mit „Kein Browser verbunden“ (bei mehreren Browsern mit dem Namen des fehlenden ausgewählten).
+- Ist der Browser zu, scheitern Aufrufe mit „Kein Browser verbunden“ (bei mehreren Browsern mit dem Namen des fehlenden ausgewählten). Die Meldung nennt die Schritte, die der Agent dir weitergeben soll: Browser öffnen, Extension einschalten und, falls ihr Symbol noch „aus“ zeigt, in ihren Optionen Relay-Adresse und Token prüfen und „Speichern und verbinden“ klicken.
 - Freigaben werden in der Extension durchgesetzt, nicht im Relay und nicht vom Agenten.
 
 Nachrichtenformate und Interna stehen in [PROTOCOL.md](PROTOCOL.md) (englisch).
@@ -143,7 +143,7 @@ Jede Variable lässt sich auch als `AGENT_TABS_…` schreiben (z. B. `AGENT_TABS
 
 | Werkzeug | Zweck |
 |---|---|
-| `tabs_context`, `tabs_create`, `tabs_close` | Freigegebene Tabs auflisten, eigene öffnen und schließen |
+| `tabs_context`, `tabs_create`, `tabs_close` | Freigegebene Tabs auflisten, eigene öffnen und schließen (`tabs_create` öffnet im Hintergrund; `active: true` holt den neuen Tab nach vorn) |
 | `list_connected_browsers`, `select_browser`, `switch_browser` | Wählen, an welchen verbundenen Browser die Aufrufe gehen |
 | `navigate` | URL aufrufen, `back` / `forward` |
 | `read_page` | Baum mit `ref_N`-Handles; `filter="interactive"`, `ref_id`, `depth`, `max_chars` |
@@ -186,7 +186,7 @@ Der Browser selbst zeigt auf gesteuerten Tabs außerdem seinen Hinweis „wird d
 ## Welche Tabs der Agent bedienen darf
 
 - Tabs, die der Agent selbst öffnet. Sie kommen in die Tab-Gruppe „Hermes“ (Agent Tabs: „Agent“), und nur diese darf der Agent schließen.
-- Tabs, die du per Klick aufs Symbol der Extension freigibst (Badge mit Haken; ein zweiter Klick entzieht die Freigabe).
+- Tabs, die du per Klick aufs Symbol der Extension freigibst (Badge mit Haken; ein zweiter Klick entzieht die Freigabe). Ein Klick aufs Symbol in einem eigenen Tab des Agenten entzieht ihn ebenso und nimmt ihn aus der Gruppe, wie Stopp. Der Agent erfährt dann, warum der Tab weg ist (entzogen, gestoppt oder geschlossen).
 - Tabs, die ein Agent-Tab öffnet (z. B. Links mit `target=_blank`), gehören ebenfalls dem Agenten.
 
 Nach einem Neuladen der Extension oder einem Browser-Neustart werden Tabs in einer Tab-Gruppe mit diesem Namen wieder als eigene Tabs des Agenten übernommen (eine eigene Gruppe mit diesem Namen zählt also als Agenten-Tabs).

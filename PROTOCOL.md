@@ -39,7 +39,8 @@ A reply may carry `"sensitive": true` (next to `result` or `error`): the request
 
 Every handler that touches a tab goes through `assertAllowed(tabId)`, directly or via `cdp()` / `page()`.
 
-- A tab is shared if it is in the shared list (kept in `storage.local.shared`), as `"user"` (toolbar icon click) or `"agent"` (opened by the agent).
+- A tab is shared if it is in the shared list (kept in `storage.local.shared`), as `"user"` (toolbar icon click) or `"agent"` (opened by the agent). The list belongs to the browser (extension instance), not to an MCP session or client: the relay is stateless, so every call of every client reaches the same list, and a tab stays usable across calls and sessions until it is withdrawn or closed.
+- A share ends when the user clicks the toolbar icon on the tab (for an `"agent"` tab this also removes it from the group, like Stop), presses Stop, the tab closes, or the browser starts. The extension remembers the reason in memory (last 50 tabs), and the "not shared" error for such a tab names it ("withdrew it with the extension's toolbar icon", "pressed Stop", "was closed") and points to `tabs_context` and `navigate` without `tabId`.
 - `tabs_close` additionally requires `"agent"`, or `"user"` with the safety switch `closeShared`. A tab the user shared is never closed over a `beforeunload` dialog: the extension dismisses the dialog and fails with "unsaved changes" (agent tabs: the dialog is accepted).
 - For a `"user"` tab the extension also stores the origin it showed when it was shared (`storage.local.shareOrigins`, tabId → origin; shares from before 0.9 take the tab's current URL on load). That origin counts as approved, see below.
 - Shared tabs are kept in `storage.local`. They survive reloading the extension and are discarded at browser start, because tab IDs are valid for one browser session only. Tabs in the package's group (`BRAND.group`: "Hermes" in Hermes Tabs, "Agent" in Agent Tabs) are adopted again as `"agent"` on load, so no orphaned agent tabs remain that the agent could no longer close. The criterion is only the group title: a user's own group with that name is adopted too.
@@ -115,6 +116,7 @@ Every handler that touches a tab goes through `assertAllowed(tabId)`, directly o
   - `confirmation`: `not_needed` (nothing loosened), `confirmed`, `declined` or `expired`. All with status 200; the state in the reply shows what applies.
   - `loosening`: what needed confirmation, e.g. `["enabled", "siteMode:all", "allowAll:1h", "sites:https://example.com:always", "blockedSites:-bank.example", "safety.passwords"]`.
 - Blocked sites are checked by `assertSafeTab` before every debugger command (URL and `pendingUrl`), and by `tabs_create` and `navigate` before opening.
+- `tabs_create` opens the tab in the background unless `active: true` is passed; then it becomes the selected tab of its window (the window itself is not raised).
 - Tabs opened by an agent tab (for example links with `target=_blank`) belong to the agent and join the group. The click result reports their ID. Detection uses `openerTabId` and, because Chromium names the window's active tab as opener when the click happens in a background tab, also the agent page's `Page.windowOpen` event, matched by URL within 3 s.
 
 ## Protected pages

@@ -43,7 +43,7 @@ Status: early. Tested interactively on ~36 popular websites and by an automated 
 - The extension opens the connection **outward** to the relay. The browser machine runs no server and has no open port.
 - The relay exposes the tools to the agent over MCP (streamable HTTP, stateless, JSON responses) at `/mcp`.
 - Several browsers can be connected to one relay (for example desktop and laptop). All calls go to the selected browser; a browser that connects later never takes over. With a single browser it is selected automatically; with several, the agent asks you (`list_connected_browsers`, `select_browser`) or you click "Connect" in the browser you want (`switch_browser`), as with Claude in Chrome.
-- If the browser is closed, tool calls fail with "no browser connected" (or, with several browsers, name the selected browser that is missing).
+- If the browser is closed, tool calls fail with "no browser connected" (or, with several browsers, name the selected browser that is missing). The error spells out the steps the agent should pass on to you: open the browser, turn the extension on, and if its icon still shows "off", check relay address and token in its options and click "Save and connect".
 - Permissions are enforced inside the extension, not in the relay and not by the agent.
 
 Message formats and internals are in [PROTOCOL.md](PROTOCOL.md).
@@ -143,7 +143,7 @@ Every variable can also be spelled `AGENT_TABS_…` (for example `AGENT_TABS_TOK
 
 | Tool | Purpose |
 |---|---|
-| `tabs_context`, `tabs_create`, `tabs_close` | List shared tabs, open and close the agent's own tabs |
+| `tabs_context`, `tabs_create`, `tabs_close` | List shared tabs, open and close the agent's own tabs (`tabs_create` opens in the background; `active: true` brings the new tab to the front) |
 | `list_connected_browsers`, `select_browser`, `switch_browser` | Choose which connected browser the calls go to |
 | `navigate` | Go to a URL, `back` / `forward` |
 | `read_page` | Accessibility-style tree with `ref_N` handles; `filter="interactive"`, `ref_id`, `depth`, `max_chars` |
@@ -186,7 +186,7 @@ The browser itself also shows its "is being debugged" notice on controlled tabs.
 ## Which tabs the agent can use
 
 - Tabs the agent opens itself. They go into a tab group called "Hermes" (Agent Tabs: "Agent"), and the agent may close only these.
-- Tabs you share by clicking the extension's toolbar icon (badge shows a check mark; a second click withdraws it).
+- Tabs you share by clicking the extension's toolbar icon (badge shows a check mark; a second click withdraws it). Clicking the icon on one of the agent's own tabs withdraws it as well and takes it out of the group, like Stop. The agent is then told why the tab is gone (withdrawn, stopped or closed).
 - Tabs opened by an agent tab (for example links with `target=_blank`) also belong to the agent.
 
 After an extension reload or a browser restart, tabs in a tab group with that name are taken over as the agent's own again (so a group of your own with that name counts as agent tabs).

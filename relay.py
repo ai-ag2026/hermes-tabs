@@ -127,6 +127,30 @@ def tool(f):
     return server.tool(structured_output=False)(run)
 
 
+# What the user can actually do when no browser is connected. Spelled out so the model passes it on instead of
+# inventing a button (it once told the user to click "Connect" somewhere).
+CONNECT_HELP = (
+    "Tell the user exactly these steps, nothing else: 1. Open the browser in which the tabs extension (Agent Tabs or "
+    "Hermes Tabs) is installed. 2. Make sure the extension is turned on in the browser's extensions page. "
+    "3. While it is not connected, its icon (in the toolbar, or in the puzzle-piece extensions menu if not pinned) shows "
+    "an \"off\" badge (in the browser's language). Then open the extension's options (right-click the icon > Options), "
+    "check that Relay address and Token are filled in and click \"Save and connect\". "
+    "When the badge is gone, the browser is connected; ask the user to tell you, then try again. "
+    "Do not mention any other button or setting: there is none in the chat, and the \"Connect\" notification of "
+    "switch_browser only appears in browsers that are already connected."
+)
+
+
+def not_connected(name: str | None = None) -> str:
+    """Error text for "no (selected) browser connected": what is wrong, what the user can do, and the other browsers."""
+    head = f'The selected browser "{name}" is not connected to the relay. ' if name else "No browser is connected to the relay. "
+    if name and browsers:
+        others = ", ".join(f'"{b["name"]}"' for b in browsers.values())
+        return (head + CONNECT_HELP + f" Alternatively, with the user's consent, switch to a connected browser ({others}): "
+                "list_connected_browsers, then select_browser.")
+    return head + CONNECT_HELP
+
+
 def target() -> WebSocket:
     """Connection of the selected browser. Never falls back to another browser: a command meant for one
     browser must not land in another one (tab IDs overlap between browsers)."""
@@ -135,12 +159,11 @@ def target() -> WebSocket:
         selected = next(iter(browsers))
     if selected is None:
         if not browsers:
-            raise ToolError("No browser connected (is the browser open and the extension active?)")
+            raise ToolError(not_connected())
         raise ToolError("Several browsers are connected and none is selected: call list_connected_browsers, "
                         "ask the user which one to use, then select_browser")
     if selected not in browsers:
-        raise ToolError(f'The selected browser "{names.get(selected, selected)}" is not connected. Ask the user to open it, '
-                        "or call list_connected_browsers and select another one with the user's consent")
+        raise ToolError(not_connected(names.get(selected, selected)))
     return browsers[selected]["ws"]
 
 
@@ -228,9 +251,11 @@ async def list_connected_browsers() -> str:
     """Lists the browsers (extension instances) connected to the relay: deviceId, name, platform, connectedAt
     (ms since 1970) and inUse (the browser your calls go to). If the user needs to choose, show them this list,
     then call select_browser."""
-    out = text(browser_list()) if browsers else "No browser connected"
+    if not browsers:
+        return not_connected(names.get(selected, selected) if selected else None)
+    out = text(browser_list())
     if selected and selected not in browsers:
-        out += f'\nThe selected browser "{names.get(selected, selected)}" is not connected.'
+        out += "\n" + not_connected(names.get(selected, selected))
     return out
 
 
@@ -257,7 +282,7 @@ async def switch_browser() -> str:
                                      pairId=pair_id)): d
             for d, b in browsers.items()}
     if not asks:
-        raise ToolError("No browser connected (is the browser open and the extension active?)")
+        raise ToolError(not_connected())
     chosen, rest = None, set(asks)
     try:
         while rest and chosen is None:
@@ -290,10 +315,12 @@ async def tabs_context(createIfEmpty: bool = False) -> str:
 
 
 @tool
-async def tabs_create(url: str | None = None) -> str:
-    """Opens a new tab of your own (in the agent's tab group, in the background), optionally with a URL.
+async def tabs_create(url: str | None = None, active: bool = False) -> str:
+    """Opens a new tab of your own in the agent's tab group, optionally with a URL. By default it opens in the
+    background: the user does not see it unless they switch to it (do not tell them they can see it).
+    active=true makes it the selected tab of its window, for when the user wants to watch (e.g. "show me").
     Close your own tabs with tabs_close when you are done."""
-    return text(await call("tabs_create", url=url))
+    return text(await call("tabs_create", url=url, active=active or None))
 
 
 @tool

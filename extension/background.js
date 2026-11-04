@@ -56,9 +56,18 @@ chrome.runtime.onStartup.addListener(() => {
   chrome.storage.local.remove(["shared", "shareOrigins"]);
 });
 
-async function setShared(tabId, owner) {
+// Why a tab stopped being shared (tabId -> reason), so the agent learns what happened instead of a bare "not shared".
+// ponytail: memory only, so after a service worker restart the plain message is shown.
+const lostTabs = new Map();
+
+async function setShared(tabId, owner, why) {
   const origin = owner === "user" ? await tabOrigin(tabId) : "";
   const shared = await getShared();
+  if (!owner && why && shared[tabId]) {
+    lostTabs.set(String(tabId), why);
+    if (lostTabs.size > 50) lostTabs.delete(lostTabs.keys().next().value);
+  }
+  if (owner) lostTabs.delete(String(tabId));
   if (owner) shared[tabId] = owner;
   else delete shared[tabId];
   if (owner === "user") shareOrigins[tabId] = origin;
@@ -94,10 +103,14 @@ async function assertNotBlocked(...urls) {
   }
 }
 
+const notShared = (tabId, what = "is not shared with you") => {
+  const why = lostTabs.get(String(tabId));
+  return new Error(`Tab ${tabId} ${what}${why ? ` – ${why}` : ""}. tabs_context lists the tabs you may use; navigate ` +
+    "without tabId uses your own tab (and opens one if you have none). Tab IDs of another browser are not valid here.");
+};
+
 async function assertAllowed(tabId) {
-  if (!Number.isInteger(tabId) || !Object.hasOwn(await getShared(), String(tabId))) {
-    throw new Error(`Tab ${tabId} is not shared with you`);
-  }
+  if (!Number.isInteger(tabId) || !Object.hasOwn(await getShared(), String(tabId))) throw notShared(tabId);
 }
 
 // Additionally before every debugger command: where does the tab point right now (also mid-navigation)?
@@ -107,14 +120,19 @@ async function assertSafeTab(tabId) {
   await assertNotBlocked(t.url, t.pendingUrl);
 }
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if ((await getShared())[tab.id]) {
-    await setShared(tab.id, null);
+// Toolbar icon: share the tab, or withdraw it. Withdrawing one of the agent's own tabs also takes it out of the
+// agent's group, as Stop does; otherwise it would be adopted again after a reload.
+async function toggleShare(tab) {
+  const owner = (await getShared())[tab.id];
+  if (owner) {
+    await setShared(tab.id, null, "the user withdrew it with the extension's toolbar icon (ask the user before you go on)");
+    if (owner === "agent") await chrome.tabs.ungroup(tab.id).catch(() => {});
     if (attached.has(tab.id)) await chrome.debugger.detach({ tabId: tab.id }).catch(() => {});
   } else {
     await setShared(tab.id, "user");
   }
-});
+}
+chrome.action.onClicked.addListener(toggleShare);
 
 // If an agent tab opens a new tab (link with target=_blank, window.open), the agent owns it too –
 // otherwise the agent would lose the thread (e.g. shop listings). Not from tabs the user shared: the user clicks there too.
@@ -144,7 +162,7 @@ const newChildren = (tabId, since) => (childTabs.get(tabId) ?? []).filter((c) =>
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   tabState.delete(tabId);
-  setShared(tabId, null);
+  setShared(tabId, null, "the tab was closed");
 });
 
 // Visual: the agent's tabs in a group of their own. If the browser does not support it, the badge remains.
@@ -315,7 +333,7 @@ async function attachAllowed(tabId) {
   await attach(tabId);
   if (!Object.hasOwn(await getShared(), String(tabId))) {
     await chrome.debugger.detach({ tabId }).catch(() => {});
-    throw new Error(`Tab ${tabId} is no longer shared with you`);
+    throw notShared(tabId, "is no longer shared with you");
   }
 }
 
@@ -927,7 +945,7 @@ chrome.notifications.onClosed.addListener((id, byUser) => {
 async function stopTab(tabId) {
   pendingAsks.get(tabId)?.resolve("deny");
   await show(tabId, { remove: true });
-  await setShared(tabId, null);
+  await setShared(tabId, null, "the user pressed Stop in the tab (ask the user before you go on)");
   await chrome.tabs.ungroup(tabId).catch(() => {});
   onceAllowed.delete(tabId);
   if (attached.has(tabId)) await chrome.debugger.detach({ tabId }).catch(() => {});
@@ -1103,18 +1121,18 @@ const handlers = {
         const w = await chrome.windows.get(t.windowId);
         out.push({ tabId: t.id, title: t.title, url: t.url, owner, active: t.active, windowId: t.windowId, window: w.state });
       } catch {
-        await setShared(+id, null);
+        await setShared(+id, null, "the tab no longer exists");
       }
     }
     return out;
   },
 
-  async tabs_create({ url }) {
+  async tabs_create({ url, active }) {
     await assertCapability("navigate"); // also for tabs_context(createIfEmpty)
     // Directly with the target URL: in some Chromium browsers the debugger cannot take over an empty background tab.
     const target = url ? normalizeUrl(url) : "about:blank";
     await assertNotBlocked(target);
-    const tab = await chrome.tabs.create({ url: target, active: false });
+    const tab = await chrome.tabs.create({ url: target, active: active === true }); // background unless asked
     await setShared(tab.id, "agent");
     await withTimeout(addToGroup(tab.id), 3000, "Grouping").catch(() => {});
     // Attach the debugger only after loading (on the first command): if it attaches earlier, some browsers
