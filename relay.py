@@ -317,7 +317,7 @@ async def tabs_context(createIfEmpty: bool = False) -> str:
 @tool
 async def tabs_create(url: str | None = None, active: bool = False) -> str:
     """Opens a new tab of your own in the agent's tab group, optionally with a URL. By default it opens in the
-    background: the user does not see it unless they switch to it (do not tell them they can see it).
+    background: the user does not see it unless they switch to it, so call it a background tab.
     active=true makes it the selected tab of its window, for when the user wants to watch (e.g. "show me").
     Close your own tabs with tabs_close when you are done."""
     return text(await call("tabs_create", url=url, active=active or None))
