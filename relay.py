@@ -828,4 +828,7 @@ if __name__ == "__main__":
     ]
     # Warnings only: the extension sends the token as a query parameter, and uvicorn
     # would otherwise log it on every connection.
-    uvicorn.run(guarded(app), host=HOST, port=PORT, access_log=False, log_level="warning")
+    # Without a bound, shutdown waits forever for a request whose body never finishes arriving
+    # (systemd then kills the relay after 90 s); after 5 s uvicorn cancels what is still open.
+    uvicorn.run(guarded(app), host=HOST, port=PORT, access_log=False, log_level="warning",
+                timeout_graceful_shutdown=5)
